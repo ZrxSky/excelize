@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -80,7 +79,7 @@ func TestColumnNameToNumber_Error(t *testing.T) {
 		}
 	}
 	_, err := ColumnNameToNumber("XFE")
-	assert.ErrorIs(t, err, ErrColumnNumber)
+	assert.EqualError(t, err, ErrColumnNumber.Error())
 }
 
 func TestColumnNumberToName_OK(t *testing.T) {
@@ -104,8 +103,8 @@ func TestColumnNumberToName_Error(t *testing.T) {
 		assert.Equal(t, "", out)
 	}
 
-	_, err = ColumnNumberToName(MaxColumns + 1)
-	assert.ErrorIs(t, err, ErrColumnNumber)
+	_, err = ColumnNumberToName(TotalColumns + 1)
+	assert.EqualError(t, err, ErrColumnNumber.Error())
 }
 
 func TestSplitCellName_OK(t *testing.T) {
@@ -341,9 +340,6 @@ func TestReadBytes(t *testing.T) {
 }
 
 func TestUnzipToTemp(t *testing.T) {
-	if strings.HasPrefix(runtime.Version(), "go1.19") {
-		t.Skip()
-	}
 	os.Setenv("TMPDIR", "test")
 	defer os.Unsetenv("TMPDIR")
 	assert.NoError(t, os.Chmod(os.TempDir(), 0o444))

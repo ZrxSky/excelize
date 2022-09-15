@@ -33,10 +33,6 @@ type WorkbookPrOptionPtr interface {
 }
 
 type (
-	// Date1904 is an option used for WorkbookPrOption, that indicates whether
-	// to use a 1900 or 1904 date system when converting serial date-times in
-	// the workbook to dates
-	Date1904 bool
 	// FilterPrivacy is an option used for WorkbookPrOption
 	FilterPrivacy bool
 )
@@ -120,10 +116,8 @@ func (f *File) workBookWriter() {
 // SetWorkbookPrOptions provides a function to sets workbook properties.
 //
 // Available options:
-//
-//	Date1904(bool)
-//	FilterPrivacy(bool)
-//	CodeName(string)
+//   FilterPrivacy(bool)
+//   CodeName(string)
 func (f *File) SetWorkbookPrOptions(opts ...WorkbookPrOption) error {
 	wb := f.workbookReader()
 	pr := wb.WorkbookPr
@@ -135,11 +129,6 @@ func (f *File) SetWorkbookPrOptions(opts ...WorkbookPrOption) error {
 		opt.setWorkbookPrOption(pr)
 	}
 	return nil
-}
-
-// setWorkbookPrOption implements the WorkbookPrOption interface.
-func (o Date1904) setWorkbookPrOption(pr *xlsxWorkbookPr) {
-	pr.Date1904 = bool(o)
 }
 
 // setWorkbookPrOption implements the WorkbookPrOption interface.
@@ -155,10 +144,8 @@ func (o CodeName) setWorkbookPrOption(pr *xlsxWorkbookPr) {
 // GetWorkbookPrOptions provides a function to gets workbook properties.
 //
 // Available options:
-//
-//	Date1904(bool)
-//	FilterPrivacy(bool)
-//	CodeName(string)
+//   FilterPrivacy(bool)
+//   CodeName(string)
 func (f *File) GetWorkbookPrOptions(opts ...WorkbookPrOptionPtr) error {
 	wb := f.workbookReader()
 	pr := wb.WorkbookPr
@@ -169,17 +156,7 @@ func (f *File) GetWorkbookPrOptions(opts ...WorkbookPrOptionPtr) error {
 }
 
 // getWorkbookPrOption implements the WorkbookPrOption interface and get the
-// date1904 of the workbook.
-func (o *Date1904) getWorkbookPrOption(pr *xlsxWorkbookPr) {
-	if pr == nil {
-		*o = false
-		return
-	}
-	*o = Date1904(pr.Date1904)
-}
-
-// getWorkbookPrOption implements the WorkbookPrOption interface and get the
-// filter privacy of the workbook.
+// filter privacy of thw workbook.
 func (o *FilterPrivacy) getWorkbookPrOption(pr *xlsxWorkbookPr) {
 	if pr == nil {
 		*o = false
@@ -189,7 +166,7 @@ func (o *FilterPrivacy) getWorkbookPrOption(pr *xlsxWorkbookPr) {
 }
 
 // getWorkbookPrOption implements the WorkbookPrOption interface and get the
-// code name of the workbook.
+// code name of thw workbook.
 func (o *CodeName) getWorkbookPrOption(pr *xlsxWorkbookPr) {
 	if pr == nil {
 		*o = ""

@@ -75,7 +75,7 @@ func TestStreamWriter(t *testing.T) {
 	assert.NoError(t, file.SaveAs(filepath.Join("test", "TestStreamWriter.xlsx")))
 
 	// Test set cell column overflow.
-	assert.ErrorIs(t, streamWriter.SetRow("XFD1", []interface{}{"A", "B", "C"}), ErrColumnNumber)
+	assert.EqualError(t, streamWriter.SetRow("XFD1", []interface{}{"A", "B", "C"}), ErrColumnNumber.Error())
 
 	// Test close temporary file error.
 	file = NewFile()
@@ -129,8 +129,6 @@ func TestStreamWriter(t *testing.T) {
 	}
 	assert.NoError(t, rows.Close())
 	assert.Equal(t, 2559558, cells)
-	// Save spreadsheet with password.
-	assert.NoError(t, file.SaveAs(filepath.Join("test", "EncryptionTestStreamWriter.xlsx"), Options{Password: "password"}))
 	assert.NoError(t, file.Close())
 }
 
@@ -139,8 +137,8 @@ func TestStreamSetColWidth(t *testing.T) {
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	assert.NoError(t, streamWriter.SetColWidth(3, 2, 20))
-	assert.ErrorIs(t, streamWriter.SetColWidth(0, 3, 20), ErrColumnNumber)
-	assert.ErrorIs(t, streamWriter.SetColWidth(MaxColumns+1, 3, 20), ErrColumnNumber)
+	assert.EqualError(t, streamWriter.SetColWidth(0, 3, 20), ErrColumnNumber.Error())
+	assert.EqualError(t, streamWriter.SetColWidth(TotalColumns+1, 3, 20), ErrColumnNumber.Error())
 	assert.EqualError(t, streamWriter.SetColWidth(1, 3, MaxColumnWidth+1), ErrColumnWidth.Error())
 	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{"A", "B", "C"}))
 	assert.EqualError(t, streamWriter.SetColWidth(2, 3, 20), ErrStreamSetColWidth.Error())
@@ -198,7 +196,7 @@ func TestNewStreamWriter(t *testing.T) {
 	_, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	_, err = file.NewStreamWriter("SheetN")
-	assert.EqualError(t, err, "sheet SheetN does not exist")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
 }
 
 func TestSetRow(t *testing.T) {
@@ -207,17 +205,6 @@ func TestSetRow(t *testing.T) {
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	assert.EqualError(t, streamWriter.SetRow("A", []interface{}{}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
-}
-
-func TestSetRowNilValues(t *testing.T) {
-	file := NewFile()
-	streamWriter, err := file.NewStreamWriter("Sheet1")
-	assert.NoError(t, err)
-	streamWriter.SetRow("A1", []interface{}{nil, nil, Cell{Value: "foo"}})
-	streamWriter.Flush()
-	ws, err := file.workSheetReader("Sheet1")
-	assert.NoError(t, err)
-	assert.NotEqual(t, ws.SheetData.Row[0].C[0].XMLName.Local, "c")
 }
 
 func TestSetCellValFunc(t *testing.T) {

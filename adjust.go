@@ -11,13 +11,6 @@
 
 package excelize
 
-import (
-	"bytes"
-	"encoding/xml"
-	"io"
-	"strings"
-)
-
 type adjustDirection bool
 
 const (
@@ -35,6 +28,7 @@ const (
 // offset: Number of rows/column to insert/delete negative values indicate deletion
 //
 // TODO: adjustPageBreaks, adjustComments, adjustDataValidations, adjustProtectedCells
+//
 func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -42,15 +36,11 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 	}
 	sheetID := f.getSheetID(sheet)
 	if dir == rows {
-		err = f.adjustRowDimensions(ws, num, offset)
+		f.adjustRowDimensions(ws, num, offset)
 	} else {
-		err = f.adjustColDimensions(ws, num, offset)
-	}
-	if err != nil {
-		return err
+		f.adjustColDimensions(ws, num, offset)
 	}
 	f.adjustHyperlinks(ws, sheet, dir, num, offset)
-	f.adjustTable(ws, sheet, dir, num, offset)
 	if err = f.adjustMergeCells(ws, dir, num, offset); err != nil {
 		return err
 	}
@@ -72,46 +62,28 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 
 // adjustColDimensions provides a function to update column dimensions when
 // inserting or deleting rows or columns.
-func (f *File) adjustColDimensions(ws *xlsxWorksheet, col, offset int) error {
-	for rowIdx := range ws.SheetData.Row {
-		for _, v := range ws.SheetData.Row[rowIdx].C {
-			if cellCol, _, _ := CellNameToCoordinates(v.R); col <= cellCol {
-				if newCol := cellCol + offset; newCol > 0 && newCol > MaxColumns {
-					return ErrColumnNumber
-				}
-			}
-		}
-	}
+func (f *File) adjustColDimensions(ws *xlsxWorksheet, col, offset int) {
 	for rowIdx := range ws.SheetData.Row {
 		for colIdx, v := range ws.SheetData.Row[rowIdx].C {
-			if cellCol, cellRow, _ := CellNameToCoordinates(v.R); col <= cellCol {
+			cellCol, cellRow, _ := CellNameToCoordinates(v.R)
+			if col <= cellCol {
 				if newCol := cellCol + offset; newCol > 0 {
 					ws.SheetData.Row[rowIdx].C[colIdx].R, _ = CoordinatesToCellName(newCol, cellRow)
 				}
 			}
 		}
 	}
-	return nil
 }
 
 // adjustRowDimensions provides a function to update row dimensions when
 // inserting or deleting rows or columns.
-func (f *File) adjustRowDimensions(ws *xlsxWorksheet, row, offset int) error {
-	totalRows := len(ws.SheetData.Row)
-	if totalRows == 0 {
-		return nil
-	}
-	lastRow := &ws.SheetData.Row[totalRows-1]
-	if newRow := lastRow.R + offset; lastRow.R >= row && newRow > 0 && newRow >= TotalRows {
-		return ErrMaxRows
-	}
-	for i := 0; i < len(ws.SheetData.Row); i++ {
+func (f *File) adjustRowDimensions(ws *xlsxWorksheet, row, offset int) {
+	for i := range ws.SheetData.Row {
 		r := &ws.SheetData.Row[i]
 		if newRow := r.R + offset; r.R >= row && newRow > 0 {
 			f.adjustSingleRowDimensions(r, newRow)
 		}
 	}
-	return nil
 }
 
 // adjustSingleRowDimensions provides a function to adjust single row dimensions.
@@ -166,54 +138,6 @@ func (f *File) adjustHyperlinks(ws *xlsxWorksheet, sheet string, dir adjustDirec
 	}
 }
 
-// adjustTable provides a function to update the table when inserting or
-// deleting rows or columns.
-func (f *File) adjustTable(ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset int) {
-	if ws.TableParts == nil || len(ws.TableParts.TableParts) == 0 {
-		return
-	}
-	for idx := 0; idx < len(ws.TableParts.TableParts); idx++ {
-		tbl := ws.TableParts.TableParts[idx]
-		target := f.getSheetRelationshipsTargetByID(sheet, tbl.RID)
-		tableXML := strings.ReplaceAll(target, "..", "xl")
-		content, ok := f.Pkg.Load(tableXML)
-		if !ok {
-			continue
-		}
-		t := xlsxTable{}
-		if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(content.([]byte)))).
-			Decode(&t); err != nil && err != io.EOF {
-			return
-		}
-		coordinates, err := areaRefToCoordinates(t.Ref)
-		if err != nil {
-			return
-		}
-		// Remove the table when deleting the header row of the table
-		if dir == rows && num == coordinates[0] {
-			ws.TableParts.TableParts = append(ws.TableParts.TableParts[:idx], ws.TableParts.TableParts[idx+1:]...)
-			ws.TableParts.Count = len(ws.TableParts.TableParts)
-			idx--
-			continue
-		}
-		coordinates = f.adjustAutoFilterHelper(dir, coordinates, num, offset)
-		x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
-		if y2-y1 < 2 || x2-x1 < 1 {
-			ws.TableParts.TableParts = append(ws.TableParts.TableParts[:idx], ws.TableParts.TableParts[idx+1:]...)
-			ws.TableParts.Count = len(ws.TableParts.TableParts)
-			idx--
-			continue
-		}
-		t.Ref, _ = f.coordinatesToAreaRef([]int{x1, y1, x2, y2})
-		if t.AutoFilter != nil {
-			t.AutoFilter.Ref = t.Ref
-		}
-		_, _ = f.setTableHeader(sheet, x1, y1, x2)
-		table, _ := xml.Marshal(t)
-		f.saveFileList(tableXML, table)
-	}
-}
-
 // adjustAutoFilter provides a function to update the auto filter when
 // inserting or deleting rows or columns.
 func (f *File) adjustAutoFilter(ws *xlsxWorksheet, dir adjustDirection, num, offset int) error {
@@ -258,13 +182,10 @@ func (f *File) adjustAutoFilterHelper(dir adjustDirection, coordinates []int, nu
 		if coordinates[3] >= num {
 			coordinates[3] += offset
 		}
-		return coordinates
-	}
-	if coordinates[0] >= num {
-		coordinates[0] += offset
-	}
-	if coordinates[2] >= num {
-		coordinates[2] += offset
+	} else {
+		if coordinates[2] >= num {
+			coordinates[2] += offset
+		}
 	}
 	return coordinates
 }

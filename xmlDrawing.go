@@ -103,15 +103,12 @@ const (
 	StreamChunkSize      = 1 << 24
 	MaxFontFamilyLength  = 31
 	MaxFontSize          = 409
-	MaxFilePathLength    = 207
+	MaxFileNameLength    = 512
 	MaxFieldLength       = 255
 	MaxColumnWidth       = 255
 	MaxRowHeight         = 409
-	MaxCellStyles        = 64000
-	MinFontSize          = 1
 	TotalRows            = 1048576
-	MinColumns           = 1
-	MaxColumns           = 16384
+	TotalColumns         = 16384
 	TotalSheetHyperlinks = 65529
 	TotalCellChars       = 32767
 	// pivotTableVersion should be greater than 3. One or more of the
@@ -121,37 +118,7 @@ const (
 	pivotTableVersion = 3
 )
 
-// ColorMappingType is the type of color transformation.
-type ColorMappingType byte
-
-// Color transformation types enumeration.
-const (
-	ColorMappingTypeLight1 ColorMappingType = iota
-	ColorMappingTypeDark1
-	ColorMappingTypeLight2
-	ColorMappingTypeDark2
-	ColorMappingTypeAccent1
-	ColorMappingTypeAccent2
-	ColorMappingTypeAccent3
-	ColorMappingTypeAccent4
-	ColorMappingTypeAccent5
-	ColorMappingTypeAccent6
-	ColorMappingTypeHyperlink
-	ColorMappingTypeFollowedHyperlink
-	ColorMappingTypeUnset int = -1
-)
-
-// supportedImageTypes defined supported image types.
-var supportedImageTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png", ".tif": ".tiff", ".tiff": ".tiff", ".emf": ".emf", ".wmf": ".wmf", ".emz": ".emz", ".wmz": ".wmz"}
-
-// supportedContentType defined supported file format types.
-var supportedContentType = map[string]string{
-	".xlam": ContentTypeAddinMacro,
-	".xlsm": ContentTypeMacro,
-	".xlsx": ContentTypeSheetML,
-	".xltm": ContentTypeTemplateMacro,
-	".xltx": ContentTypeTemplate,
-}
+var supportImageTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png", ".tif": ".tiff", ".tiff": ".tiff"}
 
 // xlsxCNvPr directly maps the cNvPr (Non-Visual Drawing Properties). This
 // element specifies non-visual canvas properties. This allows for additional
@@ -510,7 +477,6 @@ type formatPicture struct {
 
 // formatShape directly maps the format settings of the shape.
 type formatShape struct {
-	Macro     string                 `json:"macro"`
 	Type      string                 `json:"type"`
 	Width     int                    `json:"width"`
 	Height    int                    `json:"height"`

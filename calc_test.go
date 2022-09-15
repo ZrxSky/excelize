@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/xuri/efp"
 )
 
 func prepareCalcData(cellData [][]interface{}) *File {
@@ -60,88 +61,55 @@ func TestCalcCellValue(t *testing.T) {
 		"=1&2":            "12",
 		"=15%":            "0.15",
 		"=1+20%":          "1.2",
-		"={1}+2":          "3",
-		"=1+{2}":          "3",
-		"={1}+{2}":        "3",
 		`="A"="A"`:        "TRUE",
 		`="A"<>"A"`:       "FALSE",
 		// Engineering Functions
 		// BESSELI
-		"=BESSELI(4.5,1)":    "15.3892227537359",
-		"=BESSELI(32,1)":     "5502845511211.25",
-		"=BESSELI({32},1)":   "5502845511211.25",
-		"=BESSELI(32,{1})":   "5502845511211.25",
-		"=BESSELI({32},{1})": "5502845511211.25",
+		"=BESSELI(4.5,1)": "15.3892227537359",
+		"=BESSELI(32,1)":  "5502845511211.25",
 		// BESSELJ
-		"=BESSELJ(1.9,2)":     "0.329925727692387",
-		"=BESSELJ({1.9},2)":   "0.329925727692387",
-		"=BESSELJ(1.9,{2})":   "0.329925727692387",
-		"=BESSELJ({1.9},{2})": "0.329925727692387",
+		"=BESSELJ(1.9,2)": "0.329925727692387",
 		// BESSELK
-		"=BESSELK(0.05,0)":  "3.11423403428966",
-		"=BESSELK(0.05,1)":  "19.9096743272486",
-		"=BESSELK(0.05,2)":  "799.501207124235",
-		"=BESSELK(3,2)":     "0.0615104585619118",
-		"=BESSELK({3},2)":   "0.0615104585619118",
-		"=BESSELK(3,{2})":   "0.0615104585619118",
-		"=BESSELK({3},{2})": "0.0615104585619118",
+		"=BESSELK(0.05,0)": "3.11423403428966",
+		"=BESSELK(0.05,1)": "19.9096743272486",
+		"=BESSELK(0.05,2)": "799.501207124235",
+		"=BESSELK(3,2)":    "0.0615104585619118",
 		// BESSELY
-		"=BESSELY(0.05,0)":  "-1.97931100684153",
-		"=BESSELY(0.05,1)":  "-12.789855163794",
-		"=BESSELY(0.05,2)":  "-509.61489554492",
-		"=BESSELY(9,2)":     "-0.229082087487741",
-		"=BESSELY({9},2)":   "-0.229082087487741",
-		"=BESSELY(9,{2})":   "-0.229082087487741",
-		"=BESSELY({9},{2})": "-0.229082087487741",
+		"=BESSELY(0.05,0)": "-1.97931100684153",
+		"=BESSELY(0.05,1)": "-12.789855163794",
+		"=BESSELY(0.05,2)": "-509.61489554492",
+		"=BESSELY(9,2)":    "-0.229082087487741",
 		// BIN2DEC
 		"=BIN2DEC(\"10\")":         "2",
 		"=BIN2DEC(\"11\")":         "3",
 		"=BIN2DEC(\"0000000010\")": "2",
 		"=BIN2DEC(\"1111111110\")": "-2",
 		"=BIN2DEC(\"110\")":        "6",
-		"=BIN2DEC({\"110\"})":      "6",
 		// BIN2HEX
 		"=BIN2HEX(\"10\")":         "2",
 		"=BIN2HEX(\"0000000001\")": "1",
 		"=BIN2HEX(\"10\",10)":      "0000000002",
 		"=BIN2HEX(\"1111111110\")": "FFFFFFFFFE",
 		"=BIN2HEX(\"11101\")":      "1D",
-		"=BIN2HEX({\"11101\"})":    "1D",
 		// BIN2OCT
 		"=BIN2OCT(\"101\")":        "5",
 		"=BIN2OCT(\"0000000001\")": "1",
 		"=BIN2OCT(\"10\",10)":      "0000000002",
 		"=BIN2OCT(\"1111111110\")": "7777777776",
 		"=BIN2OCT(\"1110\")":       "16",
-		"=BIN2OCT({\"1110\"})":     "16",
 		// BITAND
-		"=BITAND(13,14)":     "12",
-		"=BITAND({13},14)":   "12",
-		"=BITAND(13,{14})":   "12",
-		"=BITAND({13},{14})": "12",
+		"=BITAND(13,14)": "12",
 		// BITLSHIFT
-		"=BITLSHIFT(5,2)":     "20",
-		"=BITLSHIFT({3},5)":   "96",
-		"=BITLSHIFT(3,5)":     "96",
-		"=BITLSHIFT(3,{5})":   "96",
-		"=BITLSHIFT({3},{5})": "96",
+		"=BITLSHIFT(5,2)": "20",
+		"=BITLSHIFT(3,5)": "96",
 		// BITOR
-		"=BITOR(9,12)":     "13",
-		"=BITOR({9},12)":   "13",
-		"=BITOR(9,{12})":   "13",
-		"=BITOR({9},{12})": "13",
+		"=BITOR(9,12)": "13",
 		// BITRSHIFT
-		"=BITRSHIFT(20,2)":     "5",
-		"=BITRSHIFT(52,4)":     "3",
-		"=BITRSHIFT({52},4)":   "3",
-		"=BITRSHIFT(52,{4})":   "3",
-		"=BITRSHIFT({52},{4})": "3",
+		"=BITRSHIFT(20,2)": "5",
+		"=BITRSHIFT(52,4)": "3",
 		// BITXOR
-		"=BITXOR(5,6)":      "3",
-		"=BITXOR(9,12)":     "5",
-		"=BITXOR({9},12)":   "5",
-		"=BITXOR(9,{12})":   "5",
-		"=BITXOR({9},{12})": "5",
+		"=BITXOR(5,6)":  "3",
+		"=BITXOR(9,12)": "5",
 		// COMPLEX
 		"=COMPLEX(5,2)":         "5+2i",
 		"=COMPLEX(5,-9)":        "5-9i",
@@ -152,45 +120,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=COMPLEX(0,-2)":        "-2i",
 		"=COMPLEX(0,0)":         "0",
 		"=COMPLEX(0,-1,\"j\")":  "-j",
-		// CONVERT
-		"=CONVERT(20.2,\"m\",\"yd\")":                    "22.0909886264217",
-		"=CONVERT(20.2,\"cm\",\"yd\")":                   "0.220909886264217",
-		"=CONVERT(0.2,\"gal\",\"tsp\")":                  "153.6",
-		"=CONVERT(5,\"gal\",\"l\")":                      "18.92705892",
-		"=CONVERT(0.02,\"Gm\",\"m\")":                    "20000000",
-		"=CONVERT(0,\"C\",\"F\")":                        "32",
-		"=CONVERT(1,\"ly^2\",\"ly^2\")":                  "1",
-		"=CONVERT(0.00194255938572296,\"sg\",\"ozm\")":   "1",
-		"=CONVERT(5,\"kg\",\"kg\")":                      "5",
-		"=CONVERT(4.5359237E-01,\"kg\",\"lbm\")":         "1",
-		"=CONVERT(0.2,\"kg\",\"hg\")":                    "2",
-		"=CONVERT(12.345000000000001,\"km\",\"m\")":      "12345",
-		"=CONVERT(12345,\"m\",\"km\")":                   "12.345",
-		"=CONVERT(0.621371192237334,\"mi\",\"km\")":      "1",
-		"=CONVERT(1.23450000000000E+05,\"ang\",\"um\")":  "12.345",
-		"=CONVERT(1.23450000000000E+02,\"kang\",\"um\")": "12.345",
-		"=CONVERT(1000,\"dal\",\"hl\")":                  "100",
-		"=CONVERT(1,\"yd\",\"ft\")":                      "2.99999999999999",
-		"=CONVERT(20,\"C\",\"F\")":                       "68",
-		"=CONVERT(68,\"F\",\"C\")":                       "20",
-		"=CONVERT(293.15,\"K\",\"F\")":                   "68",
-		"=CONVERT(68,\"F\",\"K\")":                       "293.15",
-		"=CONVERT(-273.15,\"C\",\"K\")":                  "0",
-		"=CONVERT(-459.67,\"F\",\"K\")":                  "0",
-		"=CONVERT(295.65,\"K\",\"C\")":                   "22.5",
-		"=CONVERT(22.5,\"C\",\"K\")":                     "295.65",
-		"=CONVERT(1667.85,\"C\",\"K\")":                  "1941",
-		"=CONVERT(3034.13,\"F\",\"K\")":                  "1941",
-		"=CONVERT(3493.8,\"Rank\",\"K\")":                "1941",
-		"=CONVERT(1334.28,\"Reau\",\"K\")":               "1941",
-		"=CONVERT(1941,\"K\",\"Rank\")":                  "3493.8",
-		"=CONVERT(1941,\"K\",\"Reau\")":                  "1334.28",
-		"=CONVERT(123.45,\"K\",\"kel\")":                 "123.45",
-		"=CONVERT(123.45,\"C\",\"cel\")":                 "123.45",
-		"=CONVERT(123.45,\"F\",\"fah\")":                 "123.45",
-		"=CONVERT(16,\"bit\",\"byte\")":                  "2",
-		"=CONVERT(1,\"kbyte\",\"byte\")":                 "1000",
-		"=CONVERT(1,\"kibyte\",\"byte\")":                "1024",
 		// DEC2BIN
 		"=DEC2BIN(2)":    "10",
 		"=DEC2BIN(3)":    "11",
@@ -254,7 +183,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=HEX2OCT(\"8\",10)":       "0000000010",
 		"=HEX2OCT(\"FFFFFFFFF8\")": "7777777770",
 		"=HEX2OCT(\"1F3\")":        "763",
-		"=HEX2OCT({\"1F3\"})":      "763",
 		// IMABS
 		"=IMABS(\"2j\")":              "2",
 		"=IMABS(\"-1+2i\")":           "2.23606797749979",
@@ -491,7 +419,6 @@ func TestCalcCellValue(t *testing.T) {
 		// COS
 		"=COS(0.785398163)": "0.707106781467586",
 		"=COS(0)":           "1",
-		"=-COS(0)":          "-1",
 		"=COS(COS(0))":      "0.54030230586814",
 		// COSH
 		"=COSH(0)":       "1",
@@ -579,7 +506,6 @@ func TestCalcCellValue(t *testing.T) {
 		// GCD
 		"=GCD(0)":        "0",
 		"=GCD(1,0)":      "1",
-		"=GCD(\"0\",1)":  "1",
 		"=GCD(1,5)":      "1",
 		"=GCD(15,10,25)": "5",
 		"=GCD(0,8,12)":   "4",
@@ -645,10 +571,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=IMPRODUCT(\"1-i\",\"5+10i\",2)":       "30+10i",
 		"=IMPRODUCT(COMPLEX(5,2),COMPLEX(0,1))": "-2+5i",
 		"=IMPRODUCT(A1:C1)":                     "4",
-		// MINVERSE
-		"=MINVERSE(A1:B2)": "-0",
-		// MMULT
-		"=MMULT(A4:A4,A4:A4)": "0",
 		// MOD
 		"=MOD(6,4)":        "2",
 		"=MOD(6,3)":        "0",
@@ -671,7 +593,7 @@ func TestCalcCellValue(t *testing.T) {
 		`=MULTINOMIAL("",3,1,2,5)`:     "27720",
 		"=MULTINOMIAL(MULTINOMIAL(1))": "1",
 		// _xlfn.MUNIT
-		"=_xlfn.MUNIT(4)": "1",
+		"=_xlfn.MUNIT(4)": "",
 		// ODD
 		"=ODD(22)":     "23",
 		"=ODD(1.22)":   "3",
@@ -690,7 +612,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=PRODUCT(3,6)":            "18",
 		`=PRODUCT("",3,6)`:         "18",
 		`=PRODUCT(PRODUCT(1),3,6)`: "18",
-		"=PRODUCT(C1:C2)":          "1",
 		// QUOTIENT
 		"=QUOTIENT(5,2)":             "2",
 		"=QUOTIENT(4.5,3.1)":         "1",
@@ -808,7 +729,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=1+SUM(SUM(1,2*3),4)*4/3+5+(4+2)*3":  "38.6666666666667",
 		"=SUM(1+ROW())":                       "2",
 		"=SUM((SUM(2))+1)":                    "3",
-		"=SUM({1,2,3,4,\"\"})":                "10",
 		// SUMIF
 		`=SUMIF(F1:F5, "")`:             "0",
 		`=SUMIF(A1:A5, "3")`:            "3",
@@ -835,7 +755,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=SUMSQ(A1,B1,A2,B2,6)":    "82",
 		`=SUMSQ("",A1,B1,A2,B2,6)`: "82",
 		`=SUMSQ(1,SUMSQ(1))`:       "2",
-		"=SUMSQ(MUNIT(3))":         "3",
+		"=SUMSQ(MUNIT(3))":         "0",
 		// SUMX2MY2
 		"=SUMX2MY2(A1:A4,B1:B4)": "-36",
 		// SUMX2PY2
@@ -964,8 +884,8 @@ func TestCalcCellValue(t *testing.T) {
 		// CORREL
 		"=CORREL(A1:A5,B1:B5)": "1",
 		// COUNT
-		"=COUNT()":                              "0",
-		"=COUNT(E1:F2,\"text\",1,INT(2),\"0\")": "4",
+		"=COUNT()":                        "0",
+		"=COUNT(E1:F2,\"text\",1,INT(2))": "3",
 		// COUNTA
 		"=COUNTA()":                              "0",
 		"=COUNTA(A1:A5,B2:B5,\"text\",1,INT(2))": "8",
@@ -996,22 +916,19 @@ func TestCalcCellValue(t *testing.T) {
 		"=DEVSQ(1,3,5,2,9,7)": "47.5",
 		"=DEVSQ(A1:D2)":       "10",
 		// FISHER
-		"=FISHER(-0.9)":    "-1.47221948958322",
-		"=FISHER(-0.25)":   "-0.255412811882995",
-		"=FISHER(0.8)":     "1.09861228866811",
-		"=FISHER(\"0.8\")": "1.09861228866811",
-		"=FISHER(INT(0))":  "0",
+		"=FISHER(-0.9)":   "-1.47221948958322",
+		"=FISHER(-0.25)":  "-0.255412811882995",
+		"=FISHER(0.8)":    "1.09861228866811",
+		"=FISHER(INT(0))": "0",
 		// FISHERINV
 		"=FISHERINV(-0.2)":   "-0.197375320224904",
 		"=FISHERINV(INT(0))": "0",
-		"=FISHERINV(\"0\")":  "0",
 		"=FISHERINV(2.8)":    "0.992631520201128",
 		// GAMMA
-		"=GAMMA(0.1)":     "9.51350769866873",
-		"=GAMMA(INT(1))":  "1",
-		"=GAMMA(1.5)":     "0.886226925452758",
-		"=GAMMA(5.5)":     "52.3427777845535",
-		"=GAMMA(\"5.5\")": "52.3427777845535",
+		"=GAMMA(0.1)":    "9.51350769866873",
+		"=GAMMA(INT(1))": "1",
+		"=GAMMA(1.5)":    "0.886226925452758",
+		"=GAMMA(5.5)":    "52.3427777845535",
 		// GAMMA.DIST
 		"=GAMMA.DIST(6,3,2,FALSE)": "0.112020903827694",
 		"=GAMMA.DIST(6,3,2,TRUE)":  "0.576809918873156",
@@ -1137,13 +1054,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=LARGE(A1,1)":    "1",
 		"=LARGE(A1:F2,1)": "36693",
 		// MAX
-		"=MAX(1)":           "1",
-		"=MAX(TRUE())":      "1",
-		"=MAX(0.5,TRUE())":  "1",
-		"=MAX(FALSE())":     "0",
-		"=MAX(MUNIT(2))":    "1",
-		"=MAX(INT(1))":      "1",
-		"=MAX(\"0\",\"2\")": "2",
+		"=MAX(1)":          "1",
+		"=MAX(TRUE())":     "1",
+		"=MAX(0.5,TRUE())": "1",
+		"=MAX(FALSE())":    "0",
+		"=MAX(MUNIT(2))":   "1",
+		"=MAX(INT(1))":     "1",
 		// MAXA
 		"=MAXA(1)":          "1",
 		"=MAXA(TRUE())":     "1",
@@ -1158,7 +1074,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=MEDIAN(A1:A5,12)":               "2",
 		"=MEDIAN(A1:A5)":                  "1.5",
 		"=MEDIAN(A1:A5,MEDIAN(A1:A5,12))": "2",
-		"=MEDIAN(\"0\",\"2\")":            "1",
 		// MIN
 		"=MIN(1)":           "1",
 		"=MIN(TRUE())":      "1",
@@ -1166,7 +1081,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=MIN(FALSE())":     "0",
 		"=MIN(MUNIT(2))":    "0",
 		"=MIN(INT(1))":      "1",
-		"=MIN(2,\"1\")":     "1",
 		// MINA
 		"=MINA(1)":           "1",
 		"=MINA(TRUE())":      "1",
@@ -1177,8 +1091,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=MINA(A1:B4,MUNIT(1),INT(0),1,E1:F2,\"\")": "0",
 		// MINIFS
 		"=MINIFS(F2:F4,A2:A4,\">0\")": "22100",
-		// PEARSON
-		"=PEARSON(A1:A4,B1:B4)": "1",
 		// PERCENTILE.EXC
 		"=PERCENTILE.EXC(A1:A4,0.2)": "0",
 		"=PERCENTILE.EXC(A1:A4,0.6)": "2",
@@ -1233,18 +1145,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=RANK.EQ(1,A1:B5)":   "5",
 		"=RANK.EQ(1,A1:B5,0)": "5",
 		"=RANK.EQ(1,A1:B5,1)": "2",
-		// RSQ
-		"=RSQ(A1:A4,B1:B4)": "1",
 		// SKEW
 		"=SKEW(1,2,3,4,3)": "-0.404796008910937",
 		"=SKEW(A1:B2)":     "0",
 		"=SKEW(A1:D3)":     "0",
-		// SKEW.P
-		"=SKEW.P(1,2,3,4,3)": "-0.27154541788364",
-		"=SKEW.P(A1:B2)":     "0",
-		"=SKEW.P(A1:D3)":     "0",
-		// SLOPE
-		"=SLOPE(A1:A4,B1:B4)": "1",
 		// SMALL
 		"=SMALL(A1:A5,1)": "0",
 		"=SMALL(A1:B5,2)": "1",
@@ -1258,10 +1162,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=STDEVP(A1:B2,6,-1)": "2.40947204913349",
 		// STDEV.P
 		"=STDEV.P(A1:B2,6,-1)": "2.40947204913349",
-		// STDEVPA
-		"=STDEVPA(1,3,5,2)":               "1.4790199457749",
-		"=STDEVPA(1,3,5,2,1,0)":           "1.63299316185545",
-		"=STDEVPA(1,3,5,2,TRUE,\"text\")": "1.63299316185545",
 		// T.DIST
 		"=T.DIST(1,10,TRUE)":   "0.82955343384897",
 		"=T.DIST(-1,10,TRUE)":  "0.17044656615103",
@@ -1290,8 +1190,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=VAR(1,3,5,0,C1)":      "4.91666666666667",
 		"=VAR(1,3,5,0,C1,TRUE)": "4",
 		// VARA
-		"=VARA(1,3,5,0,C1)":      "4.91666666666667",
-		"=VARA(1,3,5,0,C1,TRUE)": "4",
+		"=VARA(1,3,5,0,C1)":      "4.7",
+		"=VARA(1,3,5,0,C1,TRUE)": "3.86666666666667",
 		// VARP
 		"=VARP(A1:A5)":           "1.25",
 		"=VARP(1,3,5,0,C1,TRUE)": "3.2",
@@ -1301,8 +1201,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=VAR.S(1,3,5,0,C1)":      "4.91666666666667",
 		"=VAR.S(1,3,5,0,C1,TRUE)": "4",
 		// VARPA
-		"=VARPA(1,3,5,0,C1)":      "3.6875",
-		"=VARPA(1,3,5,0,C1,TRUE)": "3.2",
+		"=VARPA(1,3,5,0,C1)":      "3.76",
+		"=VARPA(1,3,5,0,C1,TRUE)": "3.22222222222222",
 		// WEIBULL
 		"=WEIBULL(1,3,1,FALSE)":  "1.10363832351433",
 		"=WEIBULL(2,5,1.5,TRUE)": "0.985212776817482",
@@ -1388,22 +1288,20 @@ func TestCalcCellValue(t *testing.T) {
 		"=T(N(10))":    "",
 		// Logical Functions
 		// AND
-		"=AND(0)":                  "FALSE",
-		"=AND(1)":                  "TRUE",
-		"=AND(1,0)":                "FALSE",
-		"=AND(0,1)":                "FALSE",
-		"=AND(1=1)":                "TRUE",
-		"=AND(1<2)":                "TRUE",
-		"=AND(1>2,2<3,2>0,3>1)":    "FALSE",
-		"=AND(1=1),1=1":            "TRUE",
-		"=AND(\"TRUE\",\"FALSE\")": "FALSE",
+		"=AND(0)":               "FALSE",
+		"=AND(1)":               "TRUE",
+		"=AND(1,0)":             "FALSE",
+		"=AND(0,1)":             "FALSE",
+		"=AND(1=1)":             "TRUE",
+		"=AND(1<2)":             "TRUE",
+		"=AND(1>2,2<3,2>0,3>1)": "FALSE",
+		"=AND(1=1),1=1":         "TRUE",
 		// FALSE
 		"=FALSE()": "FALSE",
 		// IFERROR
-		"=IFERROR(1/2,0)":             "0.5",
-		"=IFERROR(ISERROR(),0)":       "0",
-		"=IFERROR(1/0,0)":             "0",
-		"=IFERROR(B2/MROUND(A2,1),0)": "2.5",
+		"=IFERROR(1/2,0)":       "0.5",
+		"=IFERROR(ISERROR(),0)": "0",
+		"=IFERROR(1/0,0)":       "0",
 		// IFNA
 		"=IFNA(1,\"not found\")":    "1",
 		"=IFNA(NA(),\"not found\")": "not found",
@@ -1417,11 +1315,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=NOT(\"true\")":    "FALSE",
 		"=NOT(ISBLANK(B1))": "TRUE",
 		// OR
-		"=OR(1)":                  "TRUE",
-		"=OR(0)":                  "FALSE",
-		"=OR(1=2,2=2)":            "TRUE",
-		"=OR(1=2,2=3)":            "FALSE",
-		"=OR(\"TRUE\",\"FALSE\")": "TRUE",
+		"=OR(1)":       "TRUE",
+		"=OR(0)":       "FALSE",
+		"=OR(1=2,2=2)": "TRUE",
+		"=OR(1=2,2=3)": "FALSE",
 		// SWITCH
 		"=SWITCH(1,1,\"A\",2,\"B\",3,\"C\",\"N\")": "A",
 		"=SWITCH(3,1,\"A\",2,\"B\",3,\"C\",\"N\")": "C",
@@ -1477,24 +1374,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=DAYS(2,1)":                           "1",
 		"=DAYS(INT(2),INT(1))":                 "1",
 		"=DAYS(\"02/02/2015\",\"01/01/2015\")": "32",
-		// DAYS360
-		"=DAYS360(\"10/10/2020\", \"10/10/2020\")":       "0",
-		"=DAYS360(\"01/30/1999\", \"02/28/1999\")":       "28",
-		"=DAYS360(\"01/31/1999\", \"02/28/1999\")":       "28",
-		"=DAYS360(\"12/12/1999\", \"08/31/1999\")":       "-101",
-		"=DAYS360(\"12/12/1999\", \"11/30/1999\")":       "-12",
-		"=DAYS360(\"12/12/1999\", \"11/30/1999\",TRUE)":  "-12",
-		"=DAYS360(\"01/31/1999\", \"03/31/1999\",TRUE)":  "60",
-		"=DAYS360(\"01/31/1999\", \"03/31/2000\",FALSE)": "420",
-		// EDATE
-		"=EDATE(\"01/01/2021\",-1)": "44166",
-		"=EDATE(\"01/31/2020\",1)":  "43890",
-		"=EDATE(\"01/29/2020\",12)": "44225",
-		"=EDATE(\"6/12/2021\",-14)": "43933",
-		// EOMONTH
-		"=EOMONTH(\"01/01/2021\",-1)":  "44196",
-		"=EOMONTH(\"01/29/2020\",12)":  "44227",
-		"=EOMONTH(\"01/12/2021\",-18)": "43677",
 		// HOUR
 		"=HOUR(1)":                    "0",
 		"=HOUR(43543.5032060185)":     "12",
@@ -1580,18 +1459,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=WEEKDAY(\"12/25/2012\",15)": "5",
 		"=WEEKDAY(\"12/25/2012\",16)": "4",
 		"=WEEKDAY(\"12/25/2012\",17)": "3",
-		// WEEKNUM
-		"=WEEKNUM(\"01/01/2011\")":    "1",
-		"=WEEKNUM(\"01/03/2011\")":    "2",
-		"=WEEKNUM(\"01/13/2008\")":    "3",
-		"=WEEKNUM(\"01/21/2008\")":    "4",
-		"=WEEKNUM(\"01/30/2008\")":    "5",
-		"=WEEKNUM(\"02/04/2008\")":    "6",
-		"=WEEKNUM(\"01/02/2017\",2)":  "2",
-		"=WEEKNUM(\"01/02/2017\",12)": "1",
-		"=WEEKNUM(\"12/31/2017\",21)": "52",
-		"=WEEKNUM(\"01/01/2017\",21)": "52",
-		"=WEEKNUM(\"01/01/2021\",21)": "53",
 		// Text Functions
 		// CHAR
 		"=CHAR(65)": "A",
@@ -1789,9 +1656,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=HLOOKUP(F3,F3:F8,3,FALSE)":          "34440",
 		"=HLOOKUP(INT(F3),F3:F8,3,FALSE)":     "34440",
 		"=HLOOKUP(MUNIT(1),MUNIT(1),1,FALSE)": "1",
-		// HYPERLINK
-		"=HYPERLINK(\"https://github.com/xuri/excelize\")":              "https://github.com/xuri/excelize",
-		"=HYPERLINK(\"https://github.com/xuri/excelize\",\"Excelize\")": "Excelize",
 		// VLOOKUP
 		"=VLOOKUP(D2,D:D,1,FALSE)":            "Jan",
 		"=VLOOKUP(D2,D1:D10,1)":               "Jan",
@@ -1926,13 +1790,6 @@ func TestCalcCellValue(t *testing.T) {
 		// EFFECT
 		"=EFFECT(0.1,4)":   "0.103812890625",
 		"=EFFECT(0.025,2)": "0.02515625",
-		// EUROCONVERT
-		"=EUROCONVERT(1.47,\"EUR\",\"EUR\")":         "1.47",
-		"=EUROCONVERT(1.47,\"EUR\",\"DEM\")":         "2.88",
-		"=EUROCONVERT(1.47,\"FRF\",\"DEM\")":         "0.44",
-		"=EUROCONVERT(1.47,\"FRF\",\"DEM\",FALSE)":   "0.44",
-		"=EUROCONVERT(1.47,\"FRF\",\"DEM\",FALSE,3)": "0.44",
-		"=EUROCONVERT(1.47,\"FRF\",\"DEM\",TRUE,3)":  "0.43810592",
 		// FV
 		"=FV(0.05/12,60,-1000)":   "68006.0828408434",
 		"=FV(0.1/4,16,-2000,0,1)": "39729.4608941662",
@@ -1983,7 +1840,6 @@ func TestCalcCellValue(t *testing.T) {
 		// PRICEDISC
 		"=PRICEDISC(\"04/01/2017\",\"03/31/2021\",2.5%,100)":   "90",
 		"=PRICEDISC(\"04/01/2017\",\"03/31/2021\",2.5%,100,3)": "90",
-		"=PRICEDISC(\"42826\",\"03/31/2021\",2.5%,100,3)":      "90",
 		// PRICEMAT
 		"=PRICEMAT(\"04/01/2017\",\"03/31/2021\",\"01/01/2017\",4.5%,2.5%)":   "107.170454545455",
 		"=PRICEMAT(\"04/01/2017\",\"03/31/2021\",\"01/01/2017\",4.5%,2.5%,0)": "107.170454545455",
@@ -2140,21 +1996,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=COMPLEX(\"\",0)":        "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=COMPLEX(0,\"\")":        "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=COMPLEX(10,-5,\"i\",0)": "COMPLEX allows at most 3 arguments",
-		// CONVERT
-		"=CONVERT()":                          "CONVERT requires 3 arguments",
-		"=CONVERT(\"\",\"m\",\"yd\")":         "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"=CONVERT(20.2,\"m\",\"C\")":          "#N/A",
-		"=CONVERT(20.2,\"\",\"C\")":           "#N/A",
-		"=CONVERT(100,\"dapt\",\"pt\")":       "#N/A",
-		"=CONVERT(1,\"ft\",\"day\")":          "#N/A",
-		"=CONVERT(234.56,\"kpt\",\"lt\")":     "#N/A",
-		"=CONVERT(234.56,\"lt\",\"kpt\")":     "#N/A",
-		"=CONVERT(234.56,\"kiqt\",\"pt\")":    "#N/A",
-		"=CONVERT(234.56,\"pt\",\"kiqt\")":    "#N/A",
-		"=CONVERT(12345.6,\"baton\",\"cwt\")": "#N/A",
-		"=CONVERT(12345.6,\"cwt\",\"baton\")": "#N/A",
-		"=CONVERT(234.56,\"xxxx\",\"m\")":     "#N/A",
-		"=CONVERT(234.56,\"m\",\"xxxx\")":     "#N/A",
 		// DEC2BIN
 		"=DEC2BIN()":        "DEC2BIN requires at least 1 argument",
 		"=DEC2BIN(1,1,1)":   "DEC2BIN allows at most 2 arguments",
@@ -2422,7 +2263,7 @@ func TestCalcCellValue(t *testing.T) {
 		// _xlfn.DECIMAL
 		"=_xlfn.DECIMAL()":          "DECIMAL requires 2 numeric arguments",
 		`=_xlfn.DECIMAL("X", 2)`:    "strconv.ParseInt: parsing \"X\": invalid syntax",
-		`=_xlfn.DECIMAL(2000, "X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
+		`=_xlfn.DECIMAL(2000, "X")`: "strconv.Atoi: parsing \"X\": invalid syntax",
 		// DEGREES
 		"=DEGREES()":    "DEGREES requires 1 numeric argument",
 		`=DEGREES("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
@@ -2491,17 +2332,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=LOG10()":    "LOG10 requires 1 numeric argument",
 		`=LOG10("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
 		// MDETERM
-		"=MDETERM()": "MDETERM requires 1 argument",
-		// MINVERSE
-		"=MINVERSE()":      "MINVERSE requires 1 argument",
-		"=MINVERSE(B3:C4)": "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"=MINVERSE(A1:C2)": "#VALUE!",
-		"=MINVERSE(A4:A4)": "#NUM!",
-		// MMULT
-		"=MMULT()":            "MMULT requires 2 argument",
-		"=MMULT(A1:B2,B3:C4)": "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"=MMULT(B3:C4,A1:B2)": "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"=MMULT(A1:A2,B1:B2)": "#VALUE!",
+		"MDETERM()": "MDETERM requires at least 1 argument",
 		// MOD
 		"=MOD()":      "MOD requires 2 numeric arguments",
 		"=MOD(6,0)":   "MOD divide by zero",
@@ -2548,11 +2379,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=RANDBETWEEN()":      "RANDBETWEEN requires 2 numeric arguments",
 		"=RANDBETWEEN(2,1)":   "#NUM!",
 		// ROMAN
-		"=ROMAN()":       "ROMAN requires at least 1 argument",
-		"=ROMAN(1,2,3)":  "ROMAN allows at most 2 arguments",
-		"=ROMAN(1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"=ROMAN(\"\")":   "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"=ROMAN(\"\",1)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=ROMAN()":      "ROMAN requires at least 1 argument",
+		"=ROMAN(1,2,3)": "ROMAN allows at most 2 arguments",
+		`=ROMAN("X")`:   "strconv.ParseFloat: parsing \"X\": invalid syntax",
+		`=ROMAN("X",1)`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
 		// ROUND
 		"=ROUND()":      "ROUND requires 2 numeric arguments",
 		`=ROUND("X",1)`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
@@ -2656,14 +2486,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=AVEDEV(\"\")":   "#VALUE!",
 		"=AVEDEV(1,\"\")": "#VALUE!",
 		// AVERAGE
-		"=AVERAGE(H1)": "#DIV/0!",
+		"=AVERAGE(H1)": "AVERAGE divide by zero",
 		// AVERAGEA
-		"=AVERAGEA(H1)": "#DIV/0!",
+		"=AVERAGEA(H1)": "AVERAGEA divide by zero",
 		// AVERAGEIF
 		"=AVERAGEIF()":                      "AVERAGEIF requires at least 2 arguments",
-		"=AVERAGEIF(H1,\"\")":               "#DIV/0!",
-		"=AVERAGEIF(D1:D3,\"Month\",D1:D3)": "#DIV/0!",
-		"=AVERAGEIF(C1:C3,\"Month\",D1:D3)": "#DIV/0!",
+		"=AVERAGEIF(H1,\"\")":               "AVERAGEIF divide by zero",
+		"=AVERAGEIF(D1:D3,\"Month\",D1:D3)": "AVERAGEIF divide by zero",
+		"=AVERAGEIF(C1:C3,\"Month\",D1:D3)": "AVERAGEIF divide by zero",
 		// BETA.DIST
 		"=BETA.DIST()":                     "BETA.DIST requires at least 4 arguments",
 		"=BETA.DIST(0.4,4,5,TRUE,0,1,0)":   "BETA.DIST requires at most 6 arguments",
@@ -2864,7 +2694,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=GAMMA()":       "GAMMA requires 1 numeric argument",
 		"=GAMMA(F1)":     "GAMMA requires 1 numeric argument",
 		"=GAMMA(0)":      "#N/A",
-		"=GAMMA(\"0\")":  "#N/A",
 		"=GAMMA(INT(0))": "#N/A",
 		// GAMMA.DIST
 		"=GAMMA.DIST()":               "GAMMA.DIST requires 4 arguments",
@@ -3127,10 +2956,6 @@ func TestCalcCellValue(t *testing.T) {
 		// MINIFS
 		"=MINIFS()":                         "MINIFS requires at least 3 arguments",
 		"=MINIFS(F2:F4,A2:A4,\"<0\",D2:D9)": "#N/A",
-		// PEARSON
-		"=PEARSON()":            "PEARSON requires 2 arguments",
-		"=PEARSON(A1:A2,B1:B1)": "#N/A",
-		"=PEARSON(A4,A4)":       "#DIV/0!",
 		// PERCENTILE.EXC
 		"=PERCENTILE.EXC()":           "PERCENTILE.EXC requires 2 arguments",
 		"=PERCENTILE.EXC(A1:A4,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
@@ -3204,22 +3029,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=RANK.EQ(-1,A1:B5)":     "#N/A",
 		"=RANK.EQ(\"\",A1:B5)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=RANK.EQ(1,A1:B5,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
-		// RSQ
-		"=RSQ()":            "RSQ requires 2 arguments",
-		"=RSQ(A1:A2,B1:B1)": "#N/A",
-		"=RSQ(A4,A4)":       "#DIV/0!",
 		// SKEW
 		"=SKEW()":     "SKEW requires at least 1 argument",
 		"=SKEW(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=SKEW(0)":    "#DIV/0!",
-		// SKEW.P
-		"=SKEW.P()":     "SKEW.P requires at least 1 argument",
-		"=SKEW.P(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"=SKEW.P(0)":    "#DIV/0!",
-		// SLOPE
-		"=SLOPE()":            "SLOPE requires 2 arguments",
-		"=SLOPE(A1:A2,B1:B1)": "#N/A",
-		"=SLOPE(A4,A4)":       "#DIV/0!",
 		// SMALL
 		"=SMALL()":           "SMALL requires 2 arguments",
 		"=SMALL(A1:A5,0)":    "k should be > 0",
@@ -3237,9 +3050,6 @@ func TestCalcCellValue(t *testing.T) {
 		// STDEV.P
 		"=STDEV.P()":     "STDEV.P requires at least 1 argument",
 		"=STDEV.P(\"\")": "#DIV/0!",
-		// STDEVPA
-		"=STDEVPA()":     "STDEVPA requires at least 1 argument",
-		"=STDEVPA(\"\")": "#DIV/0!",
 		// T.DIST
 		"=T.DIST()":             "T.DIST requires 3 arguments",
 		"=T.DIST(\"\",10,TRUE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
@@ -3378,10 +3188,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=T(NA())": "#N/A",
 		// Logical Functions
 		// AND
-		"=AND(\"text\")":                 "#VALUE!",
-		"=AND(A1:B1)":                    "#VALUE!",
-		"=AND(\"1\",\"TRUE\",\"FALSE\")": "#VALUE!",
-		"=AND()":                         "AND requires at least 1 argument",
+		`=AND("text")`: "strconv.ParseFloat: parsing \"text\": invalid syntax",
+		`=AND(A1:B1)`:  "#VALUE!",
+		"=AND()":       "AND requires at least 1 argument",
 		"=AND(1" + strings.Repeat(",1", 30) + ")": "AND accepts at most 30 arguments",
 		// FALSE
 		"=FALSE(A1)": "FALSE takes no arguments",
@@ -3397,9 +3206,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=NOT(NOT())": "NOT requires 1 argument",
 		"=NOT(\"\")":  "NOT expects 1 boolean or numeric argument",
 		// OR
-		"=OR(\"text\")":                          "#VALUE!",
-		"=OR(A1:B1)":                             "#VALUE!",
-		"=OR(\"1\",\"TRUE\",\"FALSE\")":          "#VALUE!",
+		`=OR("text")`:                            "strconv.ParseFloat: parsing \"text\": invalid syntax",
+		`=OR(A1:B1)`:                             "#VALUE!",
 		"=OR()":                                  "OR requires at least 1 argument",
 		"=OR(1" + strings.Repeat(",1", 30) + ")": "OR accepts at most 30 arguments",
 		// SWITCH
@@ -3409,7 +3217,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=TRUE(A1)": "TRUE takes no arguments",
 		// XOR
 		"=XOR()":              "XOR requires at least 1 argument",
-		"=XOR(\"1\")":         "#VALUE!",
 		"=XOR(\"text\")":      "#VALUE!",
 		"=XOR(XOR(\"text\"))": "#VALUE!",
 		// Date and Time Functions
@@ -3467,24 +3274,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=DAYS(0,\"\")": "#VALUE!",
 		"=DAYS(NA(),0)": "#VALUE!",
 		"=DAYS(0,NA())": "#VALUE!",
-		// DAYS360
-		"=DAYS360(\"12/12/1999\")":                           "DAYS360 requires at least 2 arguments",
-		"=DAYS360(\"12/12/1999\", \"11/30/1999\",TRUE,\"\")": "DAYS360 requires at most 3 arguments",
-		"=DAYS360(\"12/12/1999\", \"11/30/1999\",\"\")":      "strconv.ParseBool: parsing \"\": invalid syntax",
-		"=DAYS360(\"12/12/1999\", \"\")":                     "#VALUE!",
-		"=DAYS360(\"\", \"11/30/1999\")":                     "#VALUE!",
-		// EDATE
-		"=EDATE()":                      "EDATE requires 2 arguments",
-		"=EDATE(0,\"\")":                "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"=EDATE(-1,0)":                  "#NUM!",
-		"=EDATE(\"\",0)":                "#VALUE!",
-		"=EDATE(\"January 25, 100\",0)": "#VALUE!",
-		// EOMONTH
-		"=EOMONTH()":                      "EOMONTH requires 2 arguments",
-		"=EOMONTH(0,\"\")":                "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"=EOMONTH(-1,0)":                  "#NUM!",
-		"=EOMONTH(\"\",0)":                "#VALUE!",
-		"=EOMONTH(\"January 25, 100\",0)": "#VALUE!",
 		// HOUR
 		"=HOUR()":             "HOUR requires exactly 1 argument",
 		"=HOUR(-1)":           "HOUR only accepts positive argument",
@@ -3544,14 +3333,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=WEEKDAY(0,0)":                 "#VALUE!",
 		"=WEEKDAY(\"January 25, 100\")": "#VALUE!",
 		"=WEEKDAY(-1,1)":                "#NUM!",
-		// WEEKNUM
-		"=WEEKNUM()":                    "WEEKNUM requires at least 1 argument",
-		"=WEEKNUM(0,1,0)":               "WEEKNUM allows at most 2 arguments",
-		"=WEEKNUM(0,\"\")":              "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"=WEEKNUM(\"\",1)":              "#VALUE!",
-		"=WEEKNUM(\"January 25, 100\")": "#VALUE!",
-		"=WEEKNUM(0,0)":                 "#NUM!",
-		"=WEEKNUM(-1,1)":                "#NUM!",
 		// Text Functions
 		// CHAR
 		"=CHAR()":     "CHAR requires 1 argument",
@@ -3713,7 +3494,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=HLOOKUP(D2,D1,1,FALSE)":        "HLOOKUP requires second argument of table array",
 		"=HLOOKUP(D2,D:D,FALSE,FALSE)":   "HLOOKUP requires numeric row argument",
 		"=HLOOKUP(D2,D:D,1,FALSE,FALSE)": "HLOOKUP requires at most 4 arguments",
-		"=HLOOKUP(D2,D:D,1,2)":           "HLOOKUP no result found",
+		"=HLOOKUP(D2,D:D,1,2)":           "strconv.ParseBool: parsing \"2\": invalid syntax",
 		"=HLOOKUP(D2,D10:D10,1,FALSE)":   "HLOOKUP no result found",
 		"=HLOOKUP(D2,D2:D3,4,FALSE)":     "HLOOKUP has invalid row index",
 		"=HLOOKUP(D2,C:C,1,FALSE)":       "HLOOKUP no result found",
@@ -3729,15 +3510,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=MATCH(0,A1:B1)":       "MATCH arguments lookup_array should be one-dimensional array",
 		// TRANSPOSE
 		"=TRANSPOSE()": "TRANSPOSE requires 1 argument",
-		// HYPERLINK
-		"=HYPERLINK()": "HYPERLINK requires at least 1 argument",
-		"=HYPERLINK(\"https://github.com/xuri/excelize\",\"Excelize\",\"\")": "HYPERLINK allows at most 2 arguments",
 		// VLOOKUP
 		"=VLOOKUP()":                     "VLOOKUP requires at least 3 arguments",
 		"=VLOOKUP(D2,D1,1,FALSE)":        "VLOOKUP requires second argument of table array",
 		"=VLOOKUP(D2,D:D,FALSE,FALSE)":   "VLOOKUP requires numeric col argument",
 		"=VLOOKUP(D2,D:D,1,FALSE,FALSE)": "VLOOKUP requires at most 4 arguments",
-		"=VLOOKUP(A1:A2,A1:A1,1)":        "VLOOKUP no result found",
+		"=VLOOKUP(D2,D:D,1,2)":           "strconv.ParseBool: parsing \"2\": invalid syntax",
 		"=VLOOKUP(D2,D10:D10,1,FALSE)":   "VLOOKUP no result found",
 		"=VLOOKUP(D2,D:D,2,FALSE)":       "VLOOKUP has invalid column index",
 		"=VLOOKUP(D2,C:C,1,FALSE)":       "VLOOKUP no result found",
@@ -3972,14 +3750,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=EFFECT(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=EFFECT(0,0)":    "#NUM!",
 		"=EFFECT(1,0)":    "#NUM!",
-		// EUROCONVERT
-		"=EUROCONVERT()": "EUROCONVERT requires at least 3 arguments",
-		"=EUROCONVERT(1.47,\"FRF\",\"DEM\",TRUE,3,1)":  "EUROCONVERT allows at most 5 arguments",
-		"=EUROCONVERT(\"\",\"FRF\",\"DEM\",TRUE,3)":    "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"=EUROCONVERT(1.47,\"FRF\",\"DEM\",\"\",3)":    "strconv.ParseBool: parsing \"\": invalid syntax",
-		"=EUROCONVERT(1.47,\"FRF\",\"DEM\",TRUE,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"=EUROCONVERT(1.47,\"\",\"DEM\")":              "#VALUE!",
-		"=EUROCONVERT(1.47,\"FRF\",\"\",TRUE,3)":       "#VALUE!",
 		// FV
 		"=FV()":              "FV requires at least 3 arguments",
 		"=FV(0,0,0,0,0,0,0)": "FV allows at most 5 arguments",
@@ -4330,13 +4100,25 @@ func TestCalcCellValue(t *testing.T) {
 	// Test get calculated cell value on not exists worksheet.
 	f = prepareCalcData(cellData)
 	_, err = f.CalcCellValue("SheetN", "A1")
-	assert.EqualError(t, err, "sheet SheetN does not exist")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
 	// Test get calculated cell value with not support formula.
 	f = prepareCalcData(cellData)
 	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=UNSUPPORT(A1)"))
 	_, err = f.CalcCellValue("Sheet1", "A1")
 	assert.EqualError(t, err, "not support UNSUPPORT function")
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestCalcCellValue.xlsx")))
+}
+
+func TestCalculate(t *testing.T) {
+	err := `strconv.ParseFloat: parsing "string": invalid syntax`
+	opd := NewStack()
+	opd.Push(efp.Token{TValue: "string"})
+	opt := efp.Token{TValue: "-", TType: efp.TokenTypeOperatorPrefix}
+	assert.EqualError(t, calculate(opd, opt), err)
+	opd.Push(efp.Token{TValue: "string"})
+	opd.Push(efp.Token{TValue: "string"})
+	opt = efp.Token{TValue: "-", TType: efp.TokenTypeOperatorInfix}
+	assert.EqualError(t, calculate(opd, opt), err)
 }
 
 func TestCalcWithDefinedName(t *testing.T) {
@@ -4579,8 +4361,6 @@ func TestCalcCOVAR(t *testing.T) {
 		"=COVAR(A2:A9,B2:B9)":        "16.633125",
 		"=COVARIANCE.P(A1:A9,B1:B9)": "16.633125",
 		"=COVARIANCE.P(A2:A9,B2:B9)": "16.633125",
-		"=COVARIANCE.S(A1:A9,B1:B9)": "19.0092857142857",
-		"=COVARIANCE.S(A2:A9,B2:B9)": "19.0092857142857",
 	}
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
@@ -4593,103 +4373,10 @@ func TestCalcCOVAR(t *testing.T) {
 		"=COVAR(A2:A9,B3:B3)":        "#N/A",
 		"=COVARIANCE.P()":            "COVARIANCE.P requires 2 arguments",
 		"=COVARIANCE.P(A2:A9,B3:B3)": "#N/A",
-		"=COVARIANCE.S()":            "COVARIANCE.S requires 2 arguments",
-		"=COVARIANCE.S(A2:A9,B3:B3)": "#N/A",
 	}
 	for formula, expected := range calcError {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
 		result, err := f.CalcCellValue("Sheet1", "C1")
-		assert.EqualError(t, err, expected, formula)
-		assert.Equal(t, "", result, formula)
-	}
-}
-
-func TestCalcDatabase(t *testing.T) {
-	cellData := [][]interface{}{
-		{"Tree", "Height", "Age", "Yield", "Profit", "Height"},
-		{nil, ">1000%", nil, nil, nil, "<16"},
-		{},
-		{"Tree", "Height", "Age", "Yield", "Profit"},
-		{"Apple", 18, 20, 14, 105},
-		{"Pear", 12, 12, 10, 96},
-		{"Cherry", 13, 14, 9, 105},
-		{"Apple", 14, nil, 10, 75},
-		{"Pear", 9, 8, 8, 77},
-		{"Apple", 12, 11, 6, 45},
-	}
-	f := prepareCalcData(cellData)
-	assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "=\"=Apple\""))
-	assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "=\"=Pear\""))
-	assert.NoError(t, f.SetCellFormula("Sheet1", "C8", "=NA()"))
-	formulaList := map[string]string{
-		"=DAVERAGE(A4:E10,\"Profit\",A1:F3)": "73.25",
-		"=DCOUNT(A4:E10,\"Age\",A1:F2)":      "1",
-		"=DCOUNT(A4:E10,,A1:F2)":             "2",
-		"=DCOUNT(A4:E10,\"Profit\",A1:F2)":   "2",
-		"=DCOUNT(A4:E10,\"Tree\",A1:F2)":     "0",
-		"=DCOUNT(A4:E10,\"Age\",A2:F3)":      "0",
-		"=DCOUNTA(A4:E10,\"Age\",A1:F2)":     "1",
-		"=DCOUNTA(A4:E10,,A1:F2)":            "2",
-		"=DCOUNTA(A4:E10,\"Profit\",A1:F2)":  "2",
-		"=DCOUNTA(A4:E10,\"Tree\",A1:F2)":    "2",
-		"=DCOUNTA(A4:E10,\"Age\",A2:F3)":     "0",
-		"=DGET(A4:E6,\"Profit\",A1:F3)":      "96",
-		"=DMAX(A4:E10,\"Tree\",A1:F3)":       "0",
-		"=DMAX(A4:E10,\"Profit\",A1:F3)":     "96",
-		"=DMIN(A4:E10,\"Tree\",A1:F3)":       "0",
-		"=DMIN(A4:E10,\"Profit\",A1:F3)":     "45",
-		"=DPRODUCT(A4:E10,\"Profit\",A1:F3)": "24948000",
-		"=DSTDEV(A4:E10,\"Profit\",A1:F3)":   "21.077238908358",
-		"=DSTDEVP(A4:E10,\"Profit\",A1:F3)":  "18.2534243362718",
-		"=DSUM(A4:E10,\"Profit\",A1:F3)":     "293",
-		"=DVAR(A4:E10,\"Profit\",A1:F3)":     "444.25",
-		"=DVARP(A4:E10,\"Profit\",A1:F3)":    "333.1875",
-	}
-	for formula, expected := range formulaList {
-		assert.NoError(t, f.SetCellFormula("Sheet1", "A11", formula))
-		result, err := f.CalcCellValue("Sheet1", "A11")
-		assert.NoError(t, err, formula)
-		assert.Equal(t, expected, result, formula)
-	}
-	calcError := map[string]string{
-		"=DAVERAGE()":                         "DAVERAGE requires 3 arguments",
-		"=DAVERAGE(A4:E10,\"x\",A1:F3)":       "#VALUE!",
-		"=DAVERAGE(A4:E10,\"Tree\",A1:F3)":    "#DIV/0!",
-		"=DCOUNT()":                           "DCOUNT requires at least 2 arguments",
-		"=DCOUNT(A4:E10,\"Age\",A1:F2,\"\")":  "DCOUNT allows at most 3 arguments",
-		"=DCOUNT(A4,\"Age\",A1:F2)":           "#VALUE!",
-		"=DCOUNT(A4:E10,NA(),A1:F2)":          "#VALUE!",
-		"=DCOUNT(A4:E4,,A1:F2)":               "#VALUE!",
-		"=DCOUNT(A4:E10,\"x\",A2:F3)":         "#VALUE!",
-		"=DCOUNTA()":                          "DCOUNTA requires at least 2 arguments",
-		"=DCOUNTA(A4:E10,\"Age\",A1:F2,\"\")": "DCOUNTA allows at most 3 arguments",
-		"=DCOUNTA(A4,\"Age\",A1:F2)":          "#VALUE!",
-		"=DCOUNTA(A4:E10,NA(),A1:F2)":         "#VALUE!",
-		"=DCOUNTA(A4:E4,,A1:F2)":              "#VALUE!",
-		"=DCOUNTA(A4:E10,\"x\",A2:F3)":        "#VALUE!",
-		"=DGET()":                             "DGET requires 3 arguments",
-		"=DGET(A4:E5,\"Profit\",A1:F3)":       "#VALUE!",
-		"=DGET(A4:E10,\"Profit\",A1:F3)":      "#NUM!",
-		"=DMAX()":                             "DMAX requires 3 arguments",
-		"=DMAX(A4:E10,\"x\",A1:F3)":           "#VALUE!",
-		"=DMIN()":                             "DMIN requires 3 arguments",
-		"=DMIN(A4:E10,\"x\",A1:F3)":           "#VALUE!",
-		"=DPRODUCT()":                         "DPRODUCT requires 3 arguments",
-		"=DPRODUCT(A4:E10,\"x\",A1:F3)":       "#VALUE!",
-		"=DSTDEV()":                           "DSTDEV requires 3 arguments",
-		"=DSTDEV(A4:E10,\"x\",A1:F3)":         "#VALUE!",
-		"=DSTDEVP()":                          "DSTDEVP requires 3 arguments",
-		"=DSTDEVP(A4:E10,\"x\",A1:F3)":        "#VALUE!",
-		"=DSUM()":                             "DSUM requires 3 arguments",
-		"=DSUM(A4:E10,\"x\",A1:F3)":           "#VALUE!",
-		"=DVAR()":                             "DVAR requires 3 arguments",
-		"=DVAR(A4:E10,\"x\",A1:F3)":           "#VALUE!",
-		"=DVARP()":                            "DVARP requires 3 arguments",
-		"=DVARP(A4:E10,\"x\",A1:F3)":          "#VALUE!",
-	}
-	for formula, expected := range calcError {
-		assert.NoError(t, f.SetCellFormula("Sheet1", "A11", formula))
-		result, err := f.CalcCellValue("Sheet1", "A11")
 		assert.EqualError(t, err, expected, formula)
 		assert.Equal(t, "", result, formula)
 	}
@@ -4703,83 +4390,6 @@ func TestCalcFORMULATEXT(t *testing.T) {
 		result, err := f.CalcCellValue("Sheet1", "D1")
 		assert.NoError(t, err, formula)
 		assert.Equal(t, formulaText, result, formula)
-	}
-}
-
-func TestCalcGROWTHandTREND(t *testing.T) {
-	cellData := [][]interface{}{
-		{"known_x's", "known_y's", 0, -1},
-		{1, 10, 1},
-		{2, 20, 1},
-		{3, 40},
-		{4, 80},
-		{},
-		{"new_x's", "new_y's"},
-		{5},
-		{6},
-		{7},
-	}
-	f := prepareCalcData(cellData)
-	formulaList := map[string]string{
-		"=GROWTH(A2:B2)":                    "1",
-		"=GROWTH(B2:B5,A2:A5,A8:A10)":       "160",
-		"=GROWTH(B2:B5,A2:A5,A8:A10,FALSE)": "467.842838114059",
-		"=GROWTH(A4:A5,A2:B3,A8:A10,FALSE)": "",
-		"=GROWTH(A3:A5,A2:B4,A2:B3)":        "2",
-		"=GROWTH(A4:A5,A2:B3)":              "",
-		"=GROWTH(A2:B2,A2:B3)":              "",
-		"=GROWTH(A2:B2,A2:B3,A2:B3,FALSE)":  "1.28402541668774",
-		"=GROWTH(A2:B2,A4:B5,A4:B5,FALSE)":  "1",
-		"=GROWTH(A3:C3,A2:C3,A2:B3)":        "2",
-		"=TREND(A2:B2)":                     "1",
-		"=TREND(B2:B5,A2:A5,A8:A10)":        "95",
-		"=TREND(B2:B5,A2:A5,A8:A10,FALSE)":  "81.6666666666667",
-		"=TREND(A4:A5,A2:B3,A8:A10,FALSE)":  "",
-		"=TREND(A4:A5,A2:B3,A2:B3,FALSE)":   "1.5",
-		"=TREND(A3:A5,A2:B4,A2:B3)":         "2",
-		"=TREND(A4:A5,A2:B3)":               "",
-		"=TREND(A2:B2,A2:B3)":               "",
-		"=TREND(A2:B2,A2:B3,A2:B3,FALSE)":   "1",
-		"=TREND(A2:B2,A4:B5,A4:B5,FALSE)":   "1",
-		"=TREND(A3:C3,A2:C3,A2:B3)":         "2",
-	}
-	for formula, expected := range formulaList {
-		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
-		result, err := f.CalcCellValue("Sheet1", "C1")
-		assert.NoError(t, err, formula)
-		assert.Equal(t, expected, result, formula)
-	}
-	calcError := map[string]string{
-		"=GROWTH()":                          "GROWTH requires at least 1 argument",
-		"=GROWTH(B2:B5,A2:A5,A8:A10,TRUE,0)": "GROWTH allows at most 4 arguments",
-		"=GROWTH(A1:B1,A2:A5,A8:A10,TRUE)":   "strconv.ParseFloat: parsing \"known_x's\": invalid syntax",
-		"=GROWTH(B2:B5,A1:B1,A8:A10,TRUE)":   "strconv.ParseFloat: parsing \"known_x's\": invalid syntax",
-		"=GROWTH(B2:B5,A2:A5,A1:B1,TRUE)":    "strconv.ParseFloat: parsing \"known_x's\": invalid syntax",
-		"=GROWTH(B2:B5,A2:A5,A8:A10,\"\")":   "strconv.ParseBool: parsing \"\": invalid syntax",
-		"=GROWTH(A2:B3,A4:B4)":               "#REF!",
-		"=GROWTH(A4:B4,A2:A2)":               "#REF!",
-		"=GROWTH(A2:A2,A4:A5)":               "#REF!",
-		"=GROWTH(C1:C1,A2:A3)":               "#NUM!",
-		"=GROWTH(D1:D1,A2:A3)":               "#NUM!",
-		"=GROWTH(A2:A3,C1:C1)":               "#NUM!",
-		"=TREND()":                           "TREND requires at least 1 argument",
-		"=TREND(B2:B5,A2:A5,A8:A10,TRUE,0)":  "TREND allows at most 4 arguments",
-		"=TREND(A1:B1,A2:A5,A8:A10,TRUE)":    "strconv.ParseFloat: parsing \"known_x's\": invalid syntax",
-		"=TREND(B2:B5,A1:B1,A8:A10,TRUE)":    "strconv.ParseFloat: parsing \"known_x's\": invalid syntax",
-		"=TREND(B2:B5,A2:A5,A1:B1,TRUE)":     "strconv.ParseFloat: parsing \"known_x's\": invalid syntax",
-		"=TREND(B2:B5,A2:A5,A8:A10,\"\")":    "strconv.ParseBool: parsing \"\": invalid syntax",
-		"=TREND(A2:B3,A4:B4)":                "#REF!",
-		"=TREND(A4:B4,A2:A2)":                "#REF!",
-		"=TREND(A2:A2,A4:A5)":                "#REF!",
-		"=TREND(C1:C1,A2:A3)":                "#NUM!",
-		"=TREND(D1:D1,A2:A3)":                "#REF!",
-		"=TREND(A2:A3,C1:C1)":                "#NUM!",
-	}
-	for formula, expected := range calcError {
-		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
-		result, err := f.CalcCellValue("Sheet1", "C1")
-		assert.EqualError(t, err, expected, formula)
-		assert.Equal(t, "", result, formula)
 	}
 }
 
@@ -5020,13 +4630,12 @@ func TestCalcSUMIFSAndAVERAGEIFS(t *testing.T) {
 		assert.Equal(t, expected, result, formula)
 	}
 	calcError := map[string]string{
-		"=AVERAGEIFS()":                                  "AVERAGEIFS requires at least 3 arguments",
-		"=AVERAGEIFS(H1,\"\")":                           "AVERAGEIFS requires at least 3 arguments",
-		"=AVERAGEIFS(H1,\"\",TRUE,1)":                    "#N/A",
-		"=AVERAGEIFS(H1,\"\",TRUE)":                      "AVERAGEIF divide by zero",
-		"=SUMIFS()":                                      "SUMIFS requires at least 3 arguments",
-		"=SUMIFS(D2:D13,A2:A13,1,B2:B13)":                "#N/A",
-		"=SUMIFS(D20:D23,A2:A13,\">2\",C2:C13,\"Jeff\")": "#VALUE!",
+		"=AVERAGEIFS()":                   "AVERAGEIFS requires at least 3 arguments",
+		"=AVERAGEIFS(H1,\"\")":            "AVERAGEIFS requires at least 3 arguments",
+		"=AVERAGEIFS(H1,\"\",TRUE,1)":     "#N/A",
+		"=AVERAGEIFS(H1,\"\",TRUE)":       "AVERAGEIF divide by zero",
+		"=SUMIFS()":                       "SUMIFS requires at least 3 arguments",
+		"=SUMIFS(D2:D13,A2:A13,1,B2:B13)": "#N/A",
 	}
 	for formula, expected := range calcError {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", formula))
@@ -5115,7 +4724,6 @@ func TestCalcXLOOKUP(t *testing.T) {
 		"=XLOOKUP()": "XLOOKUP requires at least 3 arguments",
 		"=XLOOKUP($C3,$C5:$C5,$C6:$C17,NA(),0,2,1)":  "XLOOKUP allows at most 6 arguments",
 		"=XLOOKUP($C3,$C5,$C6,NA(),0,2)":             "#N/A",
-		"=XLOOKUP(\"?\",B2:B9,C2:C9,NA(),2)":         "#N/A",
 		"=XLOOKUP($C3,$C4:$D5,$C6:$C17,NA(),0,2)":    "#VALUE!",
 		"=XLOOKUP($C3,$C5:$C5,$C6:$G17,NA(),0,-2)":   "#VALUE!",
 		"=XLOOKUP($C3,$C5:$G5,$C6:$F7,NA(),0,2)":     "#VALUE!",
@@ -5294,7 +4902,7 @@ func TestCalcMODE(t *testing.T) {
 	formulaList := map[string]string{
 		"=MODE(A1:A10)":      "3",
 		"=MODE(B1:B6)":       "2",
-		"=MODE.MULT(A1:A10)": "3",
+		"=MODE.MULT(A1:A10)": "",
 		"=MODE.SNGL(A1:A10)": "3",
 		"=MODE.SNGL(B1:B6)":  "2",
 	}
@@ -5320,89 +4928,6 @@ func TestCalcMODE(t *testing.T) {
 		result, err := f.CalcCellValue("Sheet1", "C1")
 		assert.EqualError(t, err, expected, formula)
 		assert.Equal(t, "", result, formula)
-	}
-}
-
-func TestCalcPEARSON(t *testing.T) {
-	cellData := [][]interface{}{
-		{"x", "y"},
-		{1, 10.11},
-		{2, 22.9},
-		{2, 27.61},
-		{3, 27.61},
-		{4, 11.15},
-		{5, 31.08},
-		{6, 37.9},
-		{7, 33.49},
-		{8, 21.05},
-		{9, 27.01},
-		{10, 45.78},
-		{11, 31.32},
-		{12, 50.57},
-		{13, 45.48},
-		{14, 40.94},
-		{15, 53.76},
-		{16, 36.18},
-		{17, 49.77},
-		{18, 55.66},
-		{19, 63.83},
-		{20, 63.6},
-	}
-	f := prepareCalcData(cellData)
-	formulaList := map[string]string{
-		"=PEARSON(A2:A22,B2:B22)": "0.864129542184994",
-	}
-	for formula, expected := range formulaList {
-		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
-		result, err := f.CalcCellValue("Sheet1", "C1")
-		assert.NoError(t, err, formula)
-		assert.Equal(t, expected, result, formula)
-	}
-}
-
-func TestCalcRSQ(t *testing.T) {
-	cellData := [][]interface{}{
-		{"known_y's", "known_x's"},
-		{2, 22.9},
-		{7, 33.49},
-		{8, 34.5},
-		{3, 27.61},
-		{4, 19.5},
-		{1, 10.11},
-		{6, 37.9},
-		{5, 31.08},
-	}
-	f := prepareCalcData(cellData)
-	formulaList := map[string]string{
-		"=RSQ(A2:A9,B2:B9)": "0.711666290486784",
-	}
-	for formula, expected := range formulaList {
-		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
-		result, err := f.CalcCellValue("Sheet1", "C1")
-		assert.NoError(t, err, formula)
-		assert.Equal(t, expected, result, formula)
-	}
-}
-
-func TestCalcSLOP(t *testing.T) {
-	cellData := [][]interface{}{
-		{"known_x's", "known_y's"},
-		{1, 3},
-		{2, 7},
-		{3, 17},
-		{4, 20},
-		{5, 20},
-		{6, 27},
-	}
-	f := prepareCalcData(cellData)
-	formulaList := map[string]string{
-		"=SLOPE(A2:A7,B2:B7)": "0.200826446280992",
-	}
-	for formula, expected := range formulaList {
-		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
-		result, err := f.CalcCellValue("Sheet1", "C1")
-		assert.NoError(t, err, formula)
-		assert.Equal(t, expected, result, formula)
 	}
 }
 
@@ -5435,42 +4960,6 @@ func TestCalcSHEETS(t *testing.T) {
 		result, err := f.CalcCellValue("Sheet1", "A1")
 		assert.NoError(t, err, formula)
 		assert.Equal(t, expected, result, formula)
-	}
-}
-
-func TestCalcSTEY(t *testing.T) {
-	cellData := [][]interface{}{
-		{"known_x's", "known_y's"},
-		{1, 3},
-		{2, 7.9},
-		{3, 8},
-		{4, 9.2},
-		{4.5, 12},
-		{5, 10.5},
-		{6, 15},
-		{7, 15.5},
-		{8, 17},
-	}
-	f := prepareCalcData(cellData)
-	formulaList := map[string]string{
-		"=STEYX(B2:B11,A2:A11)": "1.20118634668221",
-	}
-	for formula, expected := range formulaList {
-		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
-		result, err := f.CalcCellValue("Sheet1", "C1")
-		assert.NoError(t, err, formula)
-		assert.Equal(t, expected, result, formula)
-	}
-	calcError := map[string]string{
-		"=STEYX()":             "STEYX requires 2 arguments",
-		"=STEYX(B2:B11,A1:A9)": "#N/A",
-		"=STEYX(B2,A2)":        "#DIV/0!",
-	}
-	for formula, expected := range calcError {
-		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
-		result, err := f.CalcCellValue("Sheet1", "C1")
-		assert.EqualError(t, err, expected, formula)
-		assert.Equal(t, "", result, formula)
 	}
 }
 
@@ -5535,113 +5024,6 @@ func TestCalcTTEST(t *testing.T) {
 		"=T.TEST(A12:A13,B12:B13,1,1)":  "#DIV/0!",
 		"=T.TEST(A13:A14,B13:B14,1,2)":  "#NUM!",
 		"=T.TEST(D1:D4,E1:E4,1,3)":      "#NUM!",
-	}
-	for formula, expected := range calcError {
-		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
-		result, err := f.CalcCellValue("Sheet1", "C1")
-		assert.EqualError(t, err, expected, formula)
-		assert.Equal(t, "", result, formula)
-	}
-}
-
-func TestCalcNETWORKDAYSandWORKDAY(t *testing.T) {
-	cellData := [][]interface{}{
-		{"05/01/2019", 43586},
-		{"09/13/2019", 43721},
-		{"10/01/2019", 43739},
-		{"12/25/2019", 43824},
-		{"01/01/2020", 43831},
-		{"01/01/2020", 43831},
-		{"01/24/2020", 43854},
-		{"04/04/2020", 43925},
-		{"05/01/2020", 43952},
-		{"06/25/2020", 44007},
-	}
-	f := prepareCalcData(cellData)
-	formulaList := map[string]string{
-		"=NETWORKDAYS(\"01/01/2020\",\"09/12/2020\")":               "183",
-		"=NETWORKDAYS(\"01/01/2020\",\"09/12/2020\",2)":             "183",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\")":          "183",
-		"=NETWORKDAYS.INTL(\"09/12/2020\",\"01/01/2020\")":          "-183",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",1)":        "183",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",2)":        "184",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",3)":        "184",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",4)":        "183",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",5)":        "182",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",6)":        "182",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",7)":        "182",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",11)":       "220",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",12)":       "220",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",13)":       "220",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",14)":       "219",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",15)":       "219",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",16)":       "219",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",17)":       "219",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",1,A1:A12)": "178",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",1,B1:B12)": "178",
-		"=WORKDAY(\"12/01/2015\",25)":                               "42374",
-		"=WORKDAY(\"01/01/2020\",123,B1:B12)":                       "44006",
-		"=WORKDAY.INTL(\"12/01/2015\",0)":                           "42339",
-		"=WORKDAY.INTL(\"12/01/2015\",25)":                          "42374",
-		"=WORKDAY.INTL(\"12/01/2015\",-25)":                         "42304",
-		"=WORKDAY.INTL(\"12/01/2015\",25,1)":                        "42374",
-		"=WORKDAY.INTL(\"12/01/2015\",25,2)":                        "42374",
-		"=WORKDAY.INTL(\"12/01/2015\",25,3)":                        "42372",
-		"=WORKDAY.INTL(\"12/01/2015\",25,4)":                        "42373",
-		"=WORKDAY.INTL(\"12/01/2015\",25,5)":                        "42374",
-		"=WORKDAY.INTL(\"12/01/2015\",25,6)":                        "42374",
-		"=WORKDAY.INTL(\"12/01/2015\",25,7)":                        "42374",
-		"=WORKDAY.INTL(\"12/01/2015\",25,11)":                       "42368",
-		"=WORKDAY.INTL(\"12/01/2015\",25,12)":                       "42368",
-		"=WORKDAY.INTL(\"12/01/2015\",25,13)":                       "42368",
-		"=WORKDAY.INTL(\"12/01/2015\",25,14)":                       "42369",
-		"=WORKDAY.INTL(\"12/01/2015\",25,15)":                       "42368",
-		"=WORKDAY.INTL(\"12/01/2015\",25,16)":                       "42368",
-		"=WORKDAY.INTL(\"12/01/2015\",25,17)":                       "42368",
-		"=WORKDAY.INTL(\"12/01/2015\",25,\"0001100\")":              "42374",
-		"=WORKDAY.INTL(\"01/01/2020\",-123,4)":                      "43659",
-		"=WORKDAY.INTL(\"01/01/2020\",123,4,44010)":                 "44002",
-		"=WORKDAY.INTL(\"01/01/2020\",-123,4,43640)":                "43659",
-		"=WORKDAY.INTL(\"01/01/2020\",-123,4,43660)":                "43658",
-		"=WORKDAY.INTL(\"01/01/2020\",-123,7,43660)":                "43657",
-		"=WORKDAY.INTL(\"01/01/2020\",123,4,A1:A12)":                "44008",
-		"=WORKDAY.INTL(\"01/01/2020\",123,4,B1:B12)":                "44008",
-	}
-	for formula, expected := range formulaList {
-		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
-		result, err := f.CalcCellValue("Sheet1", "C1")
-		assert.NoError(t, err, formula)
-		assert.Equal(t, expected, result, formula)
-	}
-	calcError := map[string]string{
-		"=NETWORKDAYS()": "NETWORKDAYS requires at least 2 arguments",
-		"=NETWORKDAYS(\"01/01/2020\",\"09/12/2020\",2,\"\")":             "NETWORKDAYS requires at most 3 arguments",
-		"=NETWORKDAYS(\"\",\"09/12/2020\",2)":                            "#VALUE!",
-		"=NETWORKDAYS(\"01/01/2020\",\"\",2)":                            "#VALUE!",
-		"=NETWORKDAYS.INTL()":                                            "NETWORKDAYS.INTL requires at least 2 arguments",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",4,A1:A12,\"\")": "NETWORKDAYS.INTL requires at most 4 arguments",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",\"January 25, 100\",4)":        "#VALUE!",
-		"=NETWORKDAYS.INTL(\"\",123,4,B1:B12)":                           "#VALUE!",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",123,\"000000x\")":              "#VALUE!",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",123,\"0000002\")":              "#VALUE!",
-		"=NETWORKDAYS.INTL(\"January 25, 100\",123)":                     "#VALUE!",
-		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",8)":             "#VALUE!",
-		"=NETWORKDAYS.INTL(-1,123)":                                      "#NUM!",
-		"=WORKDAY()":                                                     "WORKDAY requires at least 2 arguments",
-		"=WORKDAY(\"01/01/2020\",123,A1:A12,\"\")":                       "WORKDAY requires at most 3 arguments",
-		"=WORKDAY(\"01/01/2020\",\"\",B1:B12)":                           "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"=WORKDAY(\"\",123,B1:B12)":                                      "#VALUE!",
-		"=WORKDAY(\"January 25, 100\",123)":                              "#VALUE!",
-		"=WORKDAY(-1,123)":                                               "#NUM!",
-		"=WORKDAY.INTL()":                                                "WORKDAY.INTL requires at least 2 arguments",
-		"=WORKDAY.INTL(\"01/01/2020\",123,4,A1:A12,\"\")":                "WORKDAY.INTL requires at most 4 arguments",
-		"=WORKDAY.INTL(\"01/01/2020\",\"\",4,B1:B12)":                    "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"=WORKDAY.INTL(\"\",123,4,B1:B12)":                               "#VALUE!",
-		"=WORKDAY.INTL(\"01/01/2020\",123,\"\",B1:B12)":                  "#VALUE!",
-		"=WORKDAY.INTL(\"01/01/2020\",123,\"000000x\")":                  "#VALUE!",
-		"=WORKDAY.INTL(\"01/01/2020\",123,\"0000002\")":                  "#VALUE!",
-		"=WORKDAY.INTL(\"January 25, 100\",123)":                         "#VALUE!",
-		"=WORKDAY.INTL(-1,123)":                                          "#NUM!",
 	}
 	for formula, expected := range calcError {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))

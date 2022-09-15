@@ -40,27 +40,20 @@ type Cols struct {
 	sheetXML                               []byte
 }
 
-// GetCols gets the value of all cells by columns on the worksheet based on the
-// given worksheet name, returned as a two-dimensional array, where the value
-// of the cell is converted to the `string` type. If the cell format can be
-// applied to the value of the cell, the applied value will be used, otherwise
-// the original value will be used.
+// GetCols return all the columns in a sheet by given worksheet name (case-sensitive). For example:
 //
-// For example, get and traverse the value of all cells by columns on a
-// worksheet named
-// 'Sheet1':
+//    cols, err := f.GetCols("Sheet1")
+//    if err != nil {
+//        fmt.Println(err)
+//        return
+//    }
+//    for _, col := range cols {
+//        for _, rowCell := range col {
+//            fmt.Print(rowCell, "\t")
+//        }
+//        fmt.Println()
+//    }
 //
-//	cols, err := f.GetCols("Sheet1")
-//	if err != nil {
-//	    fmt.Println(err)
-//	    return
-//	}
-//	for _, col := range cols {
-//	    for _, rowCell := range col {
-//	        fmt.Print(rowCell, "\t")
-//	    }
-//	    fmt.Println()
-//	}
 func (f *File) GetCols(sheet string, opts ...Options) ([][]string, error) {
 	cols, err := f.Cols(sheet)
 	if err != nil {
@@ -184,26 +177,26 @@ func columnXMLHandler(colIterator *columnXMLIterator, xmlElement *xml.StartEleme
 }
 
 // Cols returns a columns iterator, used for streaming reading data for a
-// worksheet with a large data. This function is concurrency safe. For
-// example:
+// worksheet with a large data. For example:
 //
-//	cols, err := f.Cols("Sheet1")
-//	if err != nil {
-//	    fmt.Println(err)
-//	    return
-//	}
-//	for cols.Next() {
-//	    col, err := cols.Rows()
-//	    if err != nil {
-//	        fmt.Println(err)
-//	    }
-//	    for _, rowCell := range col {
-//	        fmt.Print(rowCell, "\t")
-//	    }
-//	    fmt.Println()
-//	}
+//    cols, err := f.Cols("Sheet1")
+//    if err != nil {
+//        fmt.Println(err)
+//        return
+//    }
+//    for cols.Next() {
+//        col, err := cols.Rows()
+//        if err != nil {
+//            fmt.Println(err)
+//        }
+//        for _, rowCell := range col {
+//            fmt.Print(rowCell, "\t")
+//        }
+//        fmt.Println()
+//    }
+//
 func (f *File) Cols(sheet string) (*Cols, error) {
-	name, ok := f.getSheetXMLPath(sheet)
+	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
 		return nil, ErrSheetNotExist{sheet}
 	}
@@ -240,10 +233,11 @@ func (f *File) Cols(sheet string) (*Cols, error) {
 }
 
 // GetColVisible provides a function to get visible of a single column by given
-// worksheet name and column name. This function is concurrency safe. For
-// example, get visible state of column D in Sheet1:
+// worksheet name and column name. For example, get visible state of column D
+// in Sheet1:
 //
-//	visible, err := f.GetColVisible("Sheet1", "D")
+//    visible, err := f.GetColVisible("Sheet1", "D")
+//
 func (f *File) GetColVisible(sheet, col string) (bool, error) {
 	colNum, err := ColumnNameToNumber(col)
 	if err != nil {
@@ -253,8 +247,6 @@ func (f *File) GetColVisible(sheet, col string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	ws.Lock()
-	defer ws.Unlock()
 	if ws.Cols == nil {
 		return true, err
 	}
@@ -269,15 +261,16 @@ func (f *File) GetColVisible(sheet, col string) (bool, error) {
 }
 
 // SetColVisible provides a function to set visible columns by given worksheet
-// name, columns range and visibility. This function is concurrency safe.
+// name, columns range and visibility.
 //
 // For example hide column D on Sheet1:
 //
-//	err := f.SetColVisible("Sheet1", "D", false)
+//    err := f.SetColVisible("Sheet1", "D", false)
 //
 // Hide the columns from D to F (included):
 //
-//	err := f.SetColVisible("Sheet1", "D:F", false)
+//    err := f.SetColVisible("Sheet1", "D:F", false)
+//
 func (f *File) SetColVisible(sheet, columns string, visible bool) error {
 	start, end, err := f.parseColRange(columns)
 	if err != nil {
@@ -287,8 +280,6 @@ func (f *File) SetColVisible(sheet, columns string, visible bool) error {
 	if err != nil {
 		return err
 	}
-	ws.Lock()
-	defer ws.Unlock()
 	colData := xlsxCol{
 		Min:         start,
 		Max:         end,
@@ -319,7 +310,8 @@ func (f *File) SetColVisible(sheet, columns string, visible bool) error {
 // column by given worksheet name and column name. For example, get outline
 // level of column D in Sheet1:
 //
-//	level, err := f.GetColOutlineLevel("Sheet1", "D")
+//    level, err := f.GetColOutlineLevel("Sheet1", "D")
+//
 func (f *File) GetColOutlineLevel(sheet, col string) (uint8, error) {
 	level := uint8(0)
 	colNum, err := ColumnNameToNumber(col)
@@ -365,7 +357,8 @@ func (f *File) parseColRange(columns string) (start, end int, err error) {
 // column by given worksheet name and column name. The value of parameter
 // 'level' is 1-7. For example, set outline level of column D in Sheet1 to 2:
 //
-//	err := f.SetColOutlineLevel("Sheet1", "D", 2)
+//    err := f.SetColOutlineLevel("Sheet1", "D", 2)
+//
 func (f *File) SetColOutlineLevel(sheet, col string, level uint8) error {
 	if level > 7 || level < 1 {
 		return ErrOutlineLevel
@@ -404,34 +397,27 @@ func (f *File) SetColOutlineLevel(sheet, col string, level uint8) error {
 }
 
 // SetColStyle provides a function to set style of columns by given worksheet
-// name, columns range and style ID. This function is concurrency safe. Note
-// that this will overwrite the existing styles for the columns, it won't
-// append or merge style with existing styles.
+// name, columns range and style ID. Note that this will overwrite the
+// existing styles for the columns, it won't append or merge style with
+// existing styles.
 //
 // For example set style of column H on Sheet1:
 //
-//	err = f.SetColStyle("Sheet1", "H", style)
+//    err = f.SetColStyle("Sheet1", "H", style)
 //
 // Set style of columns C:F on Sheet1:
 //
-//	err = f.SetColStyle("Sheet1", "C:F", style)
+//    err = f.SetColStyle("Sheet1", "C:F", style)
+//
 func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 	start, end, err := f.parseColRange(columns)
 	if err != nil {
 		return err
 	}
-	s := f.stylesReader()
-	s.Lock()
-	if styleID < 0 || s.CellXfs == nil || len(s.CellXfs.Xf) <= styleID {
-		s.Unlock()
-		return newInvalidStyleID(styleID)
-	}
-	s.Unlock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-	ws.Lock()
 	if ws.Cols == nil {
 		ws.Cols = &xlsxCols{}
 	}
@@ -450,7 +436,6 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 		fc.Width = c.Width
 		return fc
 	})
-	ws.Unlock()
 	if rows := len(ws.SheetData.Row); rows > 0 {
 		for col := start; col <= end; col++ {
 			from, _ := CoordinatesToCellName(col, 1)
@@ -462,10 +447,11 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 }
 
 // SetColWidth provides a function to set the width of a single column or
-// multiple columns. This function is concurrency safe. For example:
+// multiple columns. For example:
 //
-//	f := excelize.NewFile()
-//	err := f.SetColWidth("Sheet1", "A", "H", 20)
+//    f := excelize.NewFile()
+//    err := f.SetColWidth("Sheet1", "A", "H", 20)
+//
 func (f *File) SetColWidth(sheet, startCol, endCol string, width float64) error {
 	min, err := ColumnNameToNumber(startCol)
 	if err != nil {
@@ -486,8 +472,6 @@ func (f *File) SetColWidth(sheet, startCol, endCol string, width float64) error 
 	if err != nil {
 		return err
 	}
-	ws.Lock()
-	defer ws.Unlock()
 	col := xlsxCol{
 		Min:         min,
 		Max:         max,
@@ -546,25 +530,25 @@ func flatCols(col xlsxCol, cols []xlsxCol, replacer func(fc, c xlsxCol) xlsxCol)
 // positionObjectPixels calculate the vertices that define the position of a
 // graphical object within the worksheet in pixels.
 //
-//	      +------------+------------+
-//	      |     A      |      B     |
-//	+-----+------------+------------+
-//	|     |(x1,y1)     |            |
-//	|  1  |(A1)._______|______      |
-//	|     |    |              |     |
-//	|     |    |              |     |
-//	+-----+----|    OBJECT    |-----+
-//	|     |    |              |     |
-//	|  2  |    |______________.     |
-//	|     |            |        (B2)|
-//	|     |            |     (x2,y2)|
-//	+-----+------------+------------+
+//          +------------+------------+
+//          |     A      |      B     |
+//    +-----+------------+------------+
+//    |     |(x1,y1)     |            |
+//    |  1  |(A1)._______|______      |
+//    |     |    |              |     |
+//    |     |    |              |     |
+//    +-----+----|    OBJECT    |-----+
+//    |     |    |              |     |
+//    |  2  |    |______________.     |
+//    |     |            |        (B2)|
+//    |     |            |     (x2,y2)|
+//    +-----+------------+------------+
 //
 // Example of an object that covers some area from cell A1 to B2.
 //
 // Based on the width and height of the object we need to calculate 8 vars:
 //
-//	colStart, rowStart, colEnd, rowEnd, x1, y1, x2, y2.
+//    colStart, rowStart, colEnd, rowEnd, x1, y1, x2, y2.
 //
 // We also calculate the absolute x and y position of the top left vertex of
 // the object. This is required for images.
@@ -577,20 +561,21 @@ func flatCols(col xlsxCol, cols []xlsxCol, replacer func(fc, c xlsxCol) xlsxCol)
 // subtracting the width and height of the object from the width and
 // height of the underlying cells.
 //
-//	colStart        # Col containing upper left corner of object.
-//	x1              # Distance to left side of object.
+//    colStart        # Col containing upper left corner of object.
+//    x1              # Distance to left side of object.
 //
-//	rowStart        # Row containing top left corner of object.
-//	y1              # Distance to top of object.
+//    rowStart        # Row containing top left corner of object.
+//    y1              # Distance to top of object.
 //
-//	colEnd          # Col containing lower right corner of object.
-//	x2              # Distance to right side of object.
+//    colEnd          # Col containing lower right corner of object.
+//    x2              # Distance to right side of object.
 //
-//	rowEnd          # Row containing bottom right corner of object.
-//	y2              # Distance to bottom of object.
+//    rowEnd          # Row containing bottom right corner of object.
+//    y2              # Distance to bottom of object.
 //
-//	width           # Width of object frame.
-//	height          # Height of object frame.
+//    width           # Width of object frame.
+//    height          # Height of object frame.
+//
 func (f *File) positionObjectPixels(sheet string, col, row, x1, y1, width, height int) (int, int, int, int, int, int) {
 	// Adjust start column for offsets that are greater than the col width.
 	for x1 >= f.getColWidth(sheet, col) {
@@ -632,8 +617,6 @@ func (f *File) positionObjectPixels(sheet string, col, row, x1, y1, width, heigh
 // sheet name and column number.
 func (f *File) getColWidth(sheet string, col int) int {
 	ws, _ := f.workSheetReader(sheet)
-	ws.Lock()
-	defer ws.Unlock()
 	if ws.Cols != nil {
 		var width float64
 		for _, v := range ws.Cols.Col {
@@ -649,32 +632,8 @@ func (f *File) getColWidth(sheet string, col int) int {
 	return int(defaultColWidthPixels)
 }
 
-// GetColStyle provides a function to get column style ID by given worksheet
-// name and column name. This function is concurrency safe.
-func (f *File) GetColStyle(sheet, col string) (int, error) {
-	var styleID int
-	colNum, err := ColumnNameToNumber(col)
-	if err != nil {
-		return styleID, err
-	}
-	ws, err := f.workSheetReader(sheet)
-	if err != nil {
-		return styleID, err
-	}
-	ws.Lock()
-	defer ws.Unlock()
-	if ws.Cols != nil {
-		for _, v := range ws.Cols.Col {
-			if v.Min <= colNum && colNum <= v.Max {
-				styleID = v.Style
-			}
-		}
-	}
-	return styleID, err
-}
-
 // GetColWidth provides a function to get column width by given worksheet name
-// and column name. This function is concurrency safe.
+// and column name.
 func (f *File) GetColWidth(sheet, col string) (float64, error) {
 	colNum, err := ColumnNameToNumber(col)
 	if err != nil {
@@ -684,8 +643,6 @@ func (f *File) GetColWidth(sheet, col string) (float64, error) {
 	if err != nil {
 		return defaultColWidth, err
 	}
-	ws.Lock()
-	defer ws.Unlock()
 	if ws.Cols != nil {
 		var width float64
 		for _, v := range ws.Cols.Col {
@@ -701,31 +658,23 @@ func (f *File) GetColWidth(sheet, col string) (float64, error) {
 	return defaultColWidth, err
 }
 
-// InsertCols provides a function to insert new columns before the given column
-// name and number of columns. For example, create two columns before column
-// C in Sheet1:
+// InsertCol provides a function to insert a new column before given column
+// index. For example, create a new column before column C in Sheet1:
 //
-//	err := f.InsertCols("Sheet1", "C", 2)
+//    err := f.InsertCol("Sheet1", "C")
 //
-// Use this method with caution, which will affect changes in references such
-// as formulas, charts, and so on. If there is any referenced value of the
-// worksheet, it will cause a file error when you open it. The excelize only
-// partially updates these references currently.
-func (f *File) InsertCols(sheet, col string, n int) error {
+func (f *File) InsertCol(sheet, col string) error {
 	num, err := ColumnNameToNumber(col)
 	if err != nil {
 		return err
 	}
-	if n < 1 || n > MaxColumns {
-		return ErrColumnNumber
-	}
-	return f.adjustHelper(sheet, columns, num, n)
+	return f.adjustHelper(sheet, columns, num, 1)
 }
 
 // RemoveCol provides a function to remove single column by given worksheet
 // name and column index. For example, remove column C in Sheet1:
 //
-//	err := f.RemoveCol("Sheet1", "C")
+//    err := f.RemoveCol("Sheet1", "C")
 //
 // Use this method with caution, which will affect changes in references such
 // as formulas, charts, and so on. If there is any referenced value of the

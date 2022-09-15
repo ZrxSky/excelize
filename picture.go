@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"image"
 	"io"
 	"io/ioutil"
@@ -30,8 +31,13 @@ import (
 func parseFormatPictureSet(formatSet string) (*formatPicture, error) {
 	format := formatPicture{
 		FPrintsWithSheet: true,
-		XScale:           1,
-		YScale:           1,
+		FLocksWithSheet:  false,
+		NoChangeAspect:   false,
+		Autofit:          false,
+		OffsetX:          0,
+		OffsetY:          0,
+		XScale:           1.0,
+		YScale:           1.0,
 	}
 	err := json.Unmarshal(parseFormatSet(formatSet), &format)
 	return &format, err
@@ -39,36 +45,36 @@ func parseFormatPictureSet(formatSet string) (*formatPicture, error) {
 
 // AddPicture provides the method to add picture in a sheet by given picture
 // format set (such as offset, scale, aspect ratio setting and print settings)
-// and file path. This function is concurrency safe. For example:
+// and file path. For example:
 //
-//	package main
+//    package main
 //
-//	import (
-//	    _ "image/gif"
-//	    _ "image/jpeg"
-//	    _ "image/png"
+//    import (
+//        _ "image/gif"
+//        _ "image/jpeg"
+//        _ "image/png"
 //
-//	    "github.com/xuri/excelize/v2"
-//	)
+//        "github.com/xuri/excelize/v2"
+//    )
 //
-//	func main() {
-//	    f := excelize.NewFile()
-//	    // Insert a picture.
-//	    if err := f.AddPicture("Sheet1", "A2", "image.jpg", ""); err != nil {
-//	        fmt.Println(err)
-//	    }
-//	    // Insert a picture scaling in the cell with location hyperlink.
-//	    if err := f.AddPicture("Sheet1", "D2", "image.png", `{"x_scale": 0.5, "y_scale": 0.5, "hyperlink": "#Sheet2!D8", "hyperlink_type": "Location"}`); err != nil {
-//	        fmt.Println(err)
-//	    }
-//	    // Insert a picture offset in the cell with external hyperlink, printing and positioning support.
-//	    if err := f.AddPicture("Sheet1", "H2", "image.gif", `{"x_offset": 15, "y_offset": 10, "hyperlink": "https://github.com/xuri/excelize", "hyperlink_type": "External", "print_obj": true, "lock_aspect_ratio": false, "locked": false, "positioning": "oneCell"}`); err != nil {
-//	        fmt.Println(err)
-//	    }
-//	    if err := f.SaveAs("Book1.xlsx"); err != nil {
-//	        fmt.Println(err)
-//	    }
-//	}
+//    func main() {
+//        f := excelize.NewFile()
+//        // Insert a picture.
+//        if err := f.AddPicture("Sheet1", "A2", "image.jpg", ""); err != nil {
+//            fmt.Println(err)
+//        }
+//        // Insert a picture scaling in the cell with location hyperlink.
+//        if err := f.AddPicture("Sheet1", "D2", "image.png", `{"x_scale": 0.5, "y_scale": 0.5, "hyperlink": "#Sheet2!D8", "hyperlink_type": "Location"}`); err != nil {
+//            fmt.Println(err)
+//        }
+//        // Insert a picture offset in the cell with external hyperlink, printing and positioning support.
+//        if err := f.AddPicture("Sheet1", "H2", "image.gif", `{"x_offset": 15, "y_offset": 10, "hyperlink": "https://github.com/xuri/excelize", "hyperlink_type": "External", "print_obj": true, "lock_aspect_ratio": false, "locked": false, "positioning": "oneCell"}`); err != nil {
+//            fmt.Println(err)
+//        }
+//        if err := f.SaveAs("Book1.xlsx"); err != nil {
+//            fmt.Println(err)
+//        }
+//    }
 //
 // The optional parameter "autofit" specifies if you make image size auto-fits the
 // cell, the default value of that is 'false'.
@@ -105,13 +111,14 @@ func parseFormatPictureSet(formatSet string) (*formatPicture, error) {
 //
 // The optional parameter "y_scale" specifies the vertical scale of images,
 // the default value of that is 1.0 which presents 100%.
+//
 func (f *File) AddPicture(sheet, cell, picture, format string) error {
 	var err error
 	// Check picture exists first.
 	if _, err = os.Stat(picture); os.IsNotExist(err) {
 		return err
 	}
-	ext, ok := supportedImageTypes[path.Ext(picture)]
+	ext, ok := supportImageTypes[path.Ext(picture)]
 	if !ok {
 		return ErrImgExt
 	}
@@ -124,34 +131,35 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 // picture format set (such as offset, scale, aspect ratio setting and print
 // settings), file base name, extension name and file bytes. For example:
 //
-//	package main
+//    package main
 //
-//	import (
-//	    "fmt"
-//	    _ "image/jpeg"
-//	    "io/ioutil"
+//    import (
+//        "fmt"
+//        _ "image/jpeg"
+//        "io/ioutil"
 //
-//	    "github.com/xuri/excelize/v2"
-//	)
+//        "github.com/xuri/excelize/v2"
+//    )
 //
-//	func main() {
-//	    f := excelize.NewFile()
+//    func main() {
+//        f := excelize.NewFile()
 //
-//	    file, err := ioutil.ReadFile("image.jpg")
-//	    if err != nil {
-//	        fmt.Println(err)
-//	    }
-//	    if err := f.AddPictureFromBytes("Sheet1", "A2", "", "Excel Logo", ".jpg", file); err != nil {
-//	        fmt.Println(err)
-//	    }
-//	    if err := f.SaveAs("Book1.xlsx"); err != nil {
-//	        fmt.Println(err)
-//	    }
-//	}
+//        file, err := ioutil.ReadFile("image.jpg")
+//        if err != nil {
+//            fmt.Println(err)
+//        }
+//        if err := f.AddPictureFromBytes("Sheet1", "A2", "", "Excel Logo", ".jpg", file); err != nil {
+//            fmt.Println(err)
+//        }
+//        if err := f.SaveAs("Book1.xlsx"); err != nil {
+//            fmt.Println(err)
+//        }
+//    }
+//
 func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, file []byte) error {
 	var drawingHyperlinkRID int
 	var hyperlinkType string
-	ext, ok := supportedImageTypes[extension]
+	ext, ok := supportImageTypes[extension]
 	if !ok {
 		return ErrImgExt
 	}
@@ -197,7 +205,7 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 // xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name and
 // relationship index.
 func (f *File) deleteSheetRelationships(sheet, rID string) {
-	name, ok := f.getSheetXMLPath(sheet)
+	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
 		name = strings.ToLower(sheet) + ".xml"
 	}
@@ -363,18 +371,23 @@ func (f *File) addMedia(file []byte, ext string) string {
 // setContentTypePartImageExtensions provides a function to set the content
 // type for relationship parts and the Main Document part.
 func (f *File) setContentTypePartImageExtensions() {
-	imageTypes := map[string]string{"jpeg": "image/", "png": "image/", "gif": "image/", "tiff": "image/", "emf": "image/x-", "wmf": "image/x-", "emz": "image/x-", "wmz": "image/x-"}
+	imageTypes := map[string]bool{"jpeg": false, "png": false, "gif": false, "tiff": false}
 	content := f.contentTypesReader()
 	content.Lock()
 	defer content.Unlock()
-	for _, file := range content.Defaults {
-		delete(imageTypes, file.Extension)
+	for _, v := range content.Defaults {
+		_, ok := imageTypes[v.Extension]
+		if ok {
+			imageTypes[v.Extension] = true
+		}
 	}
-	for extension, prefix := range imageTypes {
-		content.Defaults = append(content.Defaults, xlsxDefault{
-			Extension:   extension,
-			ContentType: prefix + extension,
-		})
+	for k, v := range imageTypes {
+		if !v {
+			content.Defaults = append(content.Defaults, xlsxDefault{
+				Extension:   k,
+				ContentType: "image/" + k,
+			})
+		}
 	}
 }
 
@@ -447,7 +460,7 @@ func (f *File) addContentTypePart(index int, contentType string) {
 // value in xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name and
 // relationship index.
 func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
-	name, ok := f.getSheetXMLPath(sheet)
+	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
 		name = strings.ToLower(sheet) + ".xml"
 	}
@@ -469,26 +482,27 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 // GetPicture provides a function to get picture base name and raw content
 // embed in spreadsheet by given worksheet and cell name. This function
 // returns the file name in spreadsheet and file contents as []byte data
-// types. This function is concurrency safe. For example:
+// types. For example:
 //
-//	f, err := excelize.OpenFile("Book1.xlsx")
-//	if err != nil {
-//	    fmt.Println(err)
-//	    return
-//	}
-//	defer func() {
-//	    if err := f.Close(); err != nil {
-//	        fmt.Println(err)
-//	    }
-//	}()
-//	file, raw, err := f.GetPicture("Sheet1", "A2")
-//	if err != nil {
-//	    fmt.Println(err)
-//	    return
-//	}
-//	if err := ioutil.WriteFile(file, raw, 0644); err != nil {
-//	    fmt.Println(err)
-//	}
+//    f, err := excelize.OpenFile("Book1.xlsx")
+//    if err != nil {
+//        fmt.Println(err)
+//        return
+//    }
+//    defer func() {
+//        if err := f.Close(); err != nil {
+//            fmt.Println(err)
+//        }
+//    }()
+//    file, raw, err := f.GetPicture("Sheet1", "A2")
+//    if err != nil {
+//        fmt.Println(err)
+//        return
+//    }
+//    if err := ioutil.WriteFile(file, raw, 0644); err != nil {
+//        fmt.Println(err)
+//    }
+//
 func (f *File) GetPicture(sheet, cell string) (string, []byte, error) {
 	col, row, err := CellNameToCoordinates(cell)
 	if err != nil {
@@ -504,9 +518,12 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte, error) {
 		return "", nil, err
 	}
 	target := f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
-	drawingXML := strings.ReplaceAll(target, "..", "xl")
-	drawingRelationships := strings.ReplaceAll(
-		strings.ReplaceAll(target, "../drawings", "xl/drawings/_rels"), ".xml", ".xml.rels")
+	drawingXML := strings.Replace(target, "..", "xl", -1)
+	if _, ok := f.Pkg.Load(drawingXML); !ok {
+		return "", nil, err
+	}
+	drawingRelationships := strings.Replace(
+		strings.Replace(target, "../drawings", "xl/drawings/_rels", -1), ".xml", ".xml.rels", -1)
 
 	return f.getPicture(row, col, drawingXML, drawingRelationships)
 }
@@ -528,7 +545,7 @@ func (f *File) DeletePicture(sheet, cell string) (err error) {
 	if ws.Drawing == nil {
 		return
 	}
-	drawingXML := strings.ReplaceAll(f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID), "..", "xl")
+	drawingXML := strings.Replace(f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID), "..", "xl", -1)
 	return f.deleteDrawing(col, row, drawingXML, "Pic")
 }
 
@@ -550,7 +567,7 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 	deWsDr = new(decodeWsDr)
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(drawingXML)))).
 		Decode(deWsDr); err != nil && err != io.EOF {
-		err = newDecodeXMLError(err)
+		err = fmt.Errorf("xml decode error: %s", err)
 		return
 	}
 	err = nil
@@ -558,15 +575,15 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 		deTwoCellAnchor = new(decodeTwoCellAnchor)
 		if err = f.xmlNewDecoder(strings.NewReader("<decodeTwoCellAnchor>" + anchor.Content + "</decodeTwoCellAnchor>")).
 			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
-			err = newDecodeXMLError(err)
+			err = fmt.Errorf("xml decode error: %s", err)
 			return
 		}
 		if err = nil; deTwoCellAnchor.From != nil && deTwoCellAnchor.Pic != nil {
 			if deTwoCellAnchor.From.Col == col && deTwoCellAnchor.From.Row == row {
 				drawRel = f.getDrawingRelationships(drawingRelationships, deTwoCellAnchor.Pic.BlipFill.Blip.Embed)
-				if _, ok = supportedImageTypes[filepath.Ext(drawRel.Target)]; ok {
+				if _, ok = supportImageTypes[filepath.Ext(drawRel.Target)]; ok {
 					ret = filepath.Base(drawRel.Target)
-					if buffer, _ := f.Pkg.Load(strings.ReplaceAll(drawRel.Target, "..", "xl")); buffer != nil {
+					if buffer, _ := f.Pkg.Load(strings.Replace(drawRel.Target, "..", "xl", -1)); buffer != nil {
 						buf = buffer.([]byte)
 					}
 					return
@@ -593,9 +610,9 @@ func (f *File) getPictureFromWsDr(row, col int, drawingRelationships string, wsD
 			if anchor.From.Col == col && anchor.From.Row == row {
 				if drawRel = f.getDrawingRelationships(drawingRelationships,
 					anchor.Pic.BlipFill.Blip.Embed); drawRel != nil {
-					if _, ok = supportedImageTypes[filepath.Ext(drawRel.Target)]; ok {
+					if _, ok = supportImageTypes[filepath.Ext(drawRel.Target)]; ok {
 						ret = filepath.Base(drawRel.Target)
-						if buffer, _ := f.Pkg.Load(strings.ReplaceAll(drawRel.Target, "..", "xl")); buffer != nil {
+						if buffer, _ := f.Pkg.Load(strings.Replace(drawRel.Target, "..", "xl", -1)); buffer != nil {
 							buf = buffer.([]byte)
 						}
 						return

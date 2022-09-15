@@ -13,10 +13,7 @@ var _ = []SheetPrOption{
 	EnableFormatConditionsCalculation(false),
 	Published(false),
 	FitToPage(true),
-	TabColorIndexed(42),
-	TabColorRGB("#FFFF00"),
-	TabColorTheme(ColorMappingTypeLight2),
-	TabColorTint(0.5),
+	TabColor("#FFFF00"),
 	AutoPageBreaks(true),
 	OutlineSummaryBelow(true),
 }
@@ -26,10 +23,7 @@ var _ = []SheetPrOptionPtr{
 	(*EnableFormatConditionsCalculation)(nil),
 	(*Published)(nil),
 	(*FitToPage)(nil),
-	(*TabColorIndexed)(nil),
-	(*TabColorRGB)(nil),
-	(*TabColorTheme)(nil),
-	(*TabColorTint)(nil),
+	(*TabColor)(nil),
 	(*AutoPageBreaks)(nil),
 	(*OutlineSummaryBelow)(nil),
 }
@@ -43,10 +37,7 @@ func ExampleFile_SetSheetPrOptions() {
 		EnableFormatConditionsCalculation(false),
 		Published(false),
 		FitToPage(true),
-		TabColorIndexed(42),
-		TabColorRGB("#FFFF00"),
-		TabColorTheme(ColorMappingTypeLight2),
-		TabColorTint(0.5),
+		TabColor("#FFFF00"),
 		AutoPageBreaks(true),
 		OutlineSummaryBelow(false),
 	); err != nil {
@@ -64,10 +55,7 @@ func ExampleFile_GetSheetPrOptions() {
 		enableFormatConditionsCalculation EnableFormatConditionsCalculation
 		published                         Published
 		fitToPage                         FitToPage
-		tabColorIndexed                   TabColorIndexed
-		tabColorRGB                       TabColorRGB
-		tabColorTheme                     TabColorTheme
-		tabColorTint                      TabColorTint
+		tabColor                          TabColor
 		autoPageBreaks                    AutoPageBreaks
 		outlineSummaryBelow               OutlineSummaryBelow
 	)
@@ -77,10 +65,7 @@ func ExampleFile_GetSheetPrOptions() {
 		&enableFormatConditionsCalculation,
 		&published,
 		&fitToPage,
-		&tabColorIndexed,
-		&tabColorRGB,
-		&tabColorTheme,
-		&tabColorTint,
+		&tabColor,
 		&autoPageBreaks,
 		&outlineSummaryBelow,
 	); err != nil {
@@ -91,10 +76,7 @@ func ExampleFile_GetSheetPrOptions() {
 	fmt.Println("- enableFormatConditionsCalculation:", enableFormatConditionsCalculation)
 	fmt.Println("- published:", published)
 	fmt.Println("- fitToPage:", fitToPage)
-	fmt.Printf("- tabColorIndexed: %d\n", tabColorIndexed)
-	fmt.Printf("- tabColorRGB: %q\n", tabColorRGB)
-	fmt.Printf("- tabColorTheme: %d\n", tabColorTheme)
-	fmt.Printf("- tabColorTint: %f\n", tabColorTint)
+	fmt.Printf("- tabColor: %q\n", tabColor)
 	fmt.Println("- autoPageBreaks:", autoPageBreaks)
 	fmt.Println("- outlineSummaryBelow:", outlineSummaryBelow)
 	// Output:
@@ -103,10 +85,7 @@ func ExampleFile_GetSheetPrOptions() {
 	// - enableFormatConditionsCalculation: true
 	// - published: true
 	// - fitToPage: false
-	// - tabColorIndexed: -1
-	// - tabColorRGB: ""
-	// - tabColorTheme: -1
-	// - tabColorTint: 0.000000
+	// - tabColor: ""
 	// - autoPageBreaks: false
 	// - outlineSummaryBelow: true
 }
@@ -122,10 +101,7 @@ func TestSheetPrOptions(t *testing.T) {
 		{new(EnableFormatConditionsCalculation), EnableFormatConditionsCalculation(false)},
 		{new(Published), Published(false)},
 		{new(FitToPage), FitToPage(true)},
-		{new(TabColorIndexed), TabColorIndexed(42)},
-		{new(TabColorRGB), TabColorRGB("FFFF00")},
-		{new(TabColorTheme), TabColorTheme(ColorMappingTypeLight2)},
-		{new(TabColorTint), TabColorTint(0.5)},
+		{new(TabColor), TabColor("FFFF00")},
 		{new(AutoPageBreaks), AutoPageBreaks(true)},
 		{new(OutlineSummaryBelow), OutlineSummaryBelow(false)},
 	}
@@ -178,15 +154,15 @@ func TestSheetPrOptions(t *testing.T) {
 
 func TestSetSheetPrOptions(t *testing.T) {
 	f := NewFile()
-	assert.NoError(t, f.SetSheetPrOptions("Sheet1", TabColorRGB("")))
+	assert.NoError(t, f.SetSheetPrOptions("Sheet1", TabColor("")))
 	// Test SetSheetPrOptions on not exists worksheet.
-	assert.EqualError(t, f.SetSheetPrOptions("SheetN"), "sheet SheetN does not exist")
+	assert.EqualError(t, f.SetSheetPrOptions("SheetN"), "sheet SheetN is not exist")
 }
 
 func TestGetSheetPrOptions(t *testing.T) {
 	f := NewFile()
 	// Test GetSheetPrOptions on not exists worksheet.
-	assert.EqualError(t, f.GetSheetPrOptions("SheetN"), "sheet SheetN does not exist")
+	assert.EqualError(t, f.GetSheetPrOptions("SheetN"), "sheet SheetN is not exist")
 }
 
 var _ = []PageMarginsOptions{
@@ -328,13 +304,13 @@ func TestPageMarginsOption(t *testing.T) {
 func TestSetPageMargins(t *testing.T) {
 	f := NewFile()
 	// Test set page margins on not exists worksheet.
-	assert.EqualError(t, f.SetPageMargins("SheetN"), "sheet SheetN does not exist")
+	assert.EqualError(t, f.SetPageMargins("SheetN"), "sheet SheetN is not exist")
 }
 
 func TestGetPageMargins(t *testing.T) {
 	f := NewFile()
 	// Test get page margins on not exists worksheet.
-	assert.EqualError(t, f.GetPageMargins("SheetN"), "sheet SheetN does not exist")
+	assert.EqualError(t, f.GetPageMargins("SheetN"), "sheet SheetN is not exist")
 }
 
 func ExampleFile_SetSheetFormatPr() {
@@ -469,7 +445,7 @@ func TestSetSheetFormatPr(t *testing.T) {
 	ws.(*xlsxWorksheet).SheetFormatPr = nil
 	assert.NoError(t, f.SetSheetFormatPr("Sheet1", BaseColWidth(1.0)))
 	// Test set formatting properties on not exists worksheet.
-	assert.EqualError(t, f.SetSheetFormatPr("SheetN"), "sheet SheetN does not exist")
+	assert.EqualError(t, f.SetSheetFormatPr("SheetN"), "sheet SheetN is not exist")
 }
 
 func TestGetSheetFormatPr(t *testing.T) {
@@ -497,5 +473,5 @@ func TestGetSheetFormatPr(t *testing.T) {
 		&thickBottom,
 	))
 	// Test get formatting properties on not exists worksheet.
-	assert.EqualError(t, f.GetSheetFormatPr("SheetN"), "sheet SheetN does not exist")
+	assert.EqualError(t, f.GetSheetFormatPr("SheetN"), "sheet SheetN is not exist")
 }

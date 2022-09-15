@@ -5,11 +5,10 @@ test/Test*.xlsx
 test/Test*.xltm
 test/Test*.xltx
 # generated files
-test/Encryption*.xlsx
+test/BadEncrypt.xlsx
 test/BadWorkbook.SaveAsEmptyStruct.xlsx
 test/*.png
 test/excelize-*
 *.out
 *.test
 .idea
-.DS_Store

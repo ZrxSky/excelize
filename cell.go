@@ -60,7 +60,7 @@ var cellTypes = map[string]CellType{
 // worksheet name and axis in spreadsheet file. If it is possible to apply a
 // format to the cell value, it will do so, if not then an error will be
 // returned, along with the raw value of the cell. All cells' values will be
-// the same in a merged range. This function is concurrency safe.
+// the same in a merged range.
 func (f *File) GetCellValue(sheet, axis string, opts ...Options) (string, error) {
 	return f.getCellStringFunc(sheet, axis, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
 		val, err := c.getValueFrom(f, f.sharedStringsReader(), parseOptions(opts...).RawCellValue)
@@ -85,36 +85,32 @@ func (f *File) GetCellType(sheet, axis string) (CellType, error) {
 	return cellType, err
 }
 
-// SetCellValue provides a function to set the value of a cell. This function
-// is concurrency safe. The specified coordinates should not be in the first
-// row of the table, a complex number can be set with string text. The
-// following shows the supported data types:
+// SetCellValue provides a function to set the value of a cell. The specified
+// coordinates should not be in the first row of the table, a complex number
+// can be set with string text. The following shows the supported data
+// types:
 //
-//	int
-//	int8
-//	int16
-//	int32
-//	int64
-//	uint
-//	uint8
-//	uint16
-//	uint32
-//	uint64
-//	float32
-//	float64
-//	string
-//	[]byte
-//	time.Duration
-//	time.Time
-//	bool
-//	nil
+//    int
+//    int8
+//    int16
+//    int32
+//    int64
+//    uint
+//    uint8
+//    uint16
+//    uint32
+//    uint64
+//    float32
+//    float64
+//    string
+//    []byte
+//    time.Duration
+//    time.Time
+//    bool
+//    nil
 //
-// Note that default date format is m/d/yy h:mm of time.Time type value. You
-// can set numbers format by SetCellStyle() method. If you need to set the
-// specialized date in Excel like January 0, 1900 or February 29, 1900, these
-// times can not representation in Go language time.Time data type. Please set
-// the cell value as number 0 or 60, then create and bind the date-time number
-// format style for the cell.
+// Note that default date format is m/d/yy h:mm of time.Time type value. You can
+// set numbers format by SetCellStyle() method.
 func (f *File) SetCellValue(sheet, axis string, value interface{}) error {
 	var err error
 	switch v := value.(type) {
@@ -169,24 +165,6 @@ func (c *xlsxC) hasValue() bool {
 	return c.S != 0 || c.V != "" || c.F != nil || c.T != ""
 }
 
-// removeFormula delete formula for the cell.
-func (f *File) removeFormula(c *xlsxC, ws *xlsxWorksheet, sheet string) {
-	if c.F != nil && c.Vm == nil {
-		f.deleteCalcChain(f.getSheetID(sheet), c.R)
-		if c.F.T == STCellFormulaTypeShared && c.F.Ref != "" {
-			si := c.F.Si
-			for r, row := range ws.SheetData.Row {
-				for col, cell := range row.C {
-					if cell.F != nil && cell.F.Si != nil && *cell.F.Si == *si {
-						ws.SheetData.Row[r].C[col].F = nil
-					}
-				}
-			}
-		}
-		c.F = nil
-	}
-}
-
 // setCellIntFunc is a wrapper of SetCellInt.
 func (f *File) setCellIntFunc(sheet, axis string, value interface{}) error {
 	var err error
@@ -229,12 +207,9 @@ func (f *File) setCellTimeFunc(sheet, axis string, value time.Time) error {
 	ws.Lock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	ws.Unlock()
-	date1904, wb := false, f.workbookReader()
-	if wb != nil && wb.WorkbookPr != nil {
-		date1904 = wb.WorkbookPr.Date1904
-	}
+
 	var isNum bool
-	cellData.T, cellData.V, isNum, err = setCellTime(value, date1904)
+	cellData.T, cellData.V, isNum, err = setCellTime(value)
 	if err != nil {
 		return err
 	}
@@ -246,11 +221,11 @@ func (f *File) setCellTimeFunc(sheet, axis string, value time.Time) error {
 
 // setCellTime prepares cell type and Excel time by given Go time.Time type
 // timestamp.
-func setCellTime(value time.Time, date1904 bool) (t string, b string, isNum bool, err error) {
+func setCellTime(value time.Time) (t string, b string, isNum bool, err error) {
 	var excelTime float64
 	_, offset := value.In(value.Location()).Zone()
 	value = value.Add(time.Duration(offset) * time.Second)
-	if excelTime, err = timeToExcelTime(value, date1904); err != nil {
+	if excelTime, err = timeToExcelTime(value); err != nil {
 		return
 	}
 	isNum = excelTime > 0
@@ -265,7 +240,7 @@ func setCellTime(value time.Time, date1904 bool) (t string, b string, isNum bool
 // setCellDuration prepares cell type and value by given Go time.Duration type
 // time duration.
 func setCellDuration(value time.Duration) (t string, v string) {
-	v = strconv.FormatFloat(value.Seconds()/86400, 'f', -1, 32)
+	v = strconv.FormatFloat(value.Seconds()/86400.0, 'f', -1, 32)
 	return
 }
 
@@ -284,8 +259,6 @@ func (f *File) SetCellInt(sheet, axis string, value int) error {
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V = setCellInt(value)
-	cellData.IS = nil
-	f.removeFormula(cellData, ws, sheet)
 	return err
 }
 
@@ -311,8 +284,6 @@ func (f *File) SetCellBool(sheet, axis string, value bool) error {
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V = setCellBool(value)
-	cellData.IS = nil
-	f.removeFormula(cellData, ws, sheet)
 	return err
 }
 
@@ -334,8 +305,9 @@ func setCellBool(value bool) (t string, v string) {
 // represent the number. bitSize is 32 or 64 depending on if a float32 or
 // float64 was originally used for the value. For Example:
 //
-//	var x float32 = 1.325
-//	f.SetCellFloat("Sheet1", "A1", float64(x), 2, 32)
+//    var x float32 = 1.325
+//    f.SetCellFloat("Sheet1", "A1", float64(x), 2, 32)
+//
 func (f *File) SetCellFloat(sheet, axis string, value float64, precision, bitSize int) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -349,8 +321,6 @@ func (f *File) SetCellFloat(sheet, axis string, value float64, precision, bitSiz
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V = setCellFloat(value, precision, bitSize)
-	cellData.IS = nil
-	f.removeFormula(cellData, ws, sheet)
 	return err
 }
 
@@ -376,8 +346,6 @@ func (f *File) SetCellStr(sheet, axis, value string) error {
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V, err = f.setCellString(value)
-	cellData.IS = nil
-	f.removeFormula(cellData, ws, sheet)
 	return err
 }
 
@@ -476,8 +444,6 @@ func (f *File) SetCellDefault(sheet, axis, value string) error {
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V = setCellDefault(value)
-	cellData.IS = nil
-	f.removeFormula(cellData, ws, sheet)
 	return err
 }
 
@@ -512,81 +478,83 @@ type FormulaOpts struct {
 }
 
 // SetCellFormula provides a function to set formula on the cell is taken
-// according to the given worksheet name and cell formula settings. The result
-// of the formula cell can be calculated when the worksheet is opened by the
-// Office Excel application or can be using the "CalcCellValue" function also
-// can get the calculated cell value. If the Excel application doesn't
-// calculate the formula automatically when the workbook has been opened,
-// please call "UpdateLinkedValue" after setting the cell formula functions.
+// according to the given worksheet name (case-sensitive) and cell formula
+// settings. The result of the formula cell can be calculated when the
+// worksheet is opened by the Office Excel application or can be using
+// the "CalcCellValue" function also can get the calculated cell value. If
+// the Excel application doesn't calculate the formula automatically when the
+// workbook has been opened, please call "UpdateLinkedValue" after setting
+// the cell formula functions.
 //
 // Example 1, set normal formula "=SUM(A1,B1)" for the cell "A3" on "Sheet1":
 //
-//	err := f.SetCellFormula("Sheet1", "A3", "=SUM(A1,B1)")
+//    err := f.SetCellFormula("Sheet1", "A3", "=SUM(A1,B1)")
 //
 // Example 2, set one-dimensional vertical constant array (row array) formula
 // "1,2,3" for the cell "A3" on "Sheet1":
 //
-//	err := f.SetCellFormula("Sheet1", "A3", "={1,2,3}")
+//    err := f.SetCellFormula("Sheet1", "A3", "={1,2,3}")
 //
 // Example 3, set one-dimensional horizontal constant array (column array)
 // formula '"a","b","c"' for the cell "A3" on "Sheet1":
 //
-//	err := f.SetCellFormula("Sheet1", "A3", "={\"a\",\"b\",\"c\"}")
+//    err := f.SetCellFormula("Sheet1", "A3", "={\"a\",\"b\",\"c\"}")
 //
 // Example 4, set two-dimensional constant array formula '{1,2,"a","b"}' for
 // the cell "A3" on "Sheet1":
 //
-//	formulaType, ref := excelize.STCellFormulaTypeArray, "A3:A3"
-//	err := f.SetCellFormula("Sheet1", "A3", "={1,2,\"a\",\"b\"}",
-//	    excelize.FormulaOpts{Ref: &ref, Type: &formulaType})
+//    formulaType, ref := excelize.STCellFormulaTypeArray, "A3:A3"
+//    err := f.SetCellFormula("Sheet1", "A3", "={1,2,\"a\",\"b\"}",
+//        excelize.FormulaOpts{Ref: &ref, Type: &formulaType})
 //
 // Example 5, set range array formula "A1:A2" for the cell "A3" on "Sheet1":
 //
-//	   formulaType, ref := excelize.STCellFormulaTypeArray, "A3:A3"
-//	   err := f.SetCellFormula("Sheet1", "A3", "=A1:A2",
-//		      excelize.FormulaOpts{Ref: &ref, Type: &formulaType})
+//    formulaType, ref := excelize.STCellFormulaTypeArray, "A3:A3"
+//    err := f.SetCellFormula("Sheet1", "A3", "=A1:A2",
+//	      excelize.FormulaOpts{Ref: &ref, Type: &formulaType})
 //
 // Example 6, set shared formula "=A1+B1" for the cell "C1:C5"
 // on "Sheet1", "C1" is the master cell:
 //
-//	formulaType, ref := excelize.STCellFormulaTypeShared, "C1:C5"
-//	err := f.SetCellFormula("Sheet1", "C1", "=A1+B1",
-//	    excelize.FormulaOpts{Ref: &ref, Type: &formulaType})
+//    formulaType, ref := excelize.STCellFormulaTypeShared, "C1:C5"
+//    err := f.SetCellFormula("Sheet1", "C1", "=A1+B1",
+//        excelize.FormulaOpts{Ref: &ref, Type: &formulaType})
 //
 // Example 7, set table formula "=SUM(Table1[[A]:[B]])" for the cell "C2"
 // on "Sheet1":
 //
-//	package main
+//    package main
 //
-//	import (
-//	    "fmt"
+//    import (
+//        "fmt"
 //
-//	    "github.com/xuri/excelize/v2"
-//	)
+//        "github.com/xuri/excelize/v2"
+//    )
 //
-//	func main() {
-//	    f := excelize.NewFile()
-//	    for idx, row := range [][]interface{}{{"A", "B", "C"}, {1, 2}} {
-//	        if err := f.SetSheetRow("Sheet1", fmt.Sprintf("A%d", idx+1), &row); err != nil {
-//	        	fmt.Println(err)
-//	        	return
-//	        }
-//	    }
-//	    if err := f.AddTable("Sheet1", "A1", "C2",
-//	        `{"table_name":"Table1","table_style":"TableStyleMedium2"}`); err != nil {
-//	        fmt.Println(err)
-//	        return
-//	    }
-//	    formulaType := excelize.STCellFormulaTypeDataTable
-//	    if err := f.SetCellFormula("Sheet1", "C2", "=SUM(Table1[[A]:[B]])",
-//	        excelize.FormulaOpts{Type: &formulaType}); err != nil {
-//	        fmt.Println(err)
-//	        return
-//	    }
-//	    if err := f.SaveAs("Book1.xlsx"); err != nil {
-//	        fmt.Println(err)
-//	    }
-//	}
+//    func main() {
+//        f := excelize.NewFile()
+//        for idx, row := range [][]interface{}{{"A", "B", "C"}, {1, 2}} {
+//            if err := f.SetSheetRow("Sheet1", fmt.Sprintf("A%d", idx+1), &row); err != nil {
+//            	fmt.Println(err)
+//            	return
+//            }
+//        }
+//        if err := f.AddTable("Sheet1", "A1", "C2",
+//            `{"table_name":"Table1","table_style":"TableStyleMedium2"}`); err != nil {
+//            fmt.Println(err)
+//            return
+//        }
+//        formulaType := excelize.STCellFormulaTypeDataTable
+//        if err := f.SetCellFormula("Sheet1", "C2", "=SUM(Table1[[A]:[B]])",
+//            excelize.FormulaOpts{Type: &formulaType}); err != nil {
+//            fmt.Println(err)
+//            return
+//        }
+//        if err := f.SaveAs("Book1.xlsx"); err != nil {
+//            fmt.Println(err)
+//        }
+//    }
+//
 func (f *File) SetCellFormula(sheet, axis, formula string, opts ...FormulaOpts) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -624,7 +592,7 @@ func (f *File) SetCellFormula(sheet, axis, formula string, opts ...FormulaOpts) 
 			cellData.F.Ref = *o.Ref
 		}
 	}
-	cellData.IS = nil
+
 	return err
 }
 
@@ -662,14 +630,14 @@ func (ws *xlsxWorksheet) countSharedFormula() (count int) {
 	return
 }
 
-// GetCellHyperLink gets a cell hyperlink based on the given worksheet name and
-// cell coordinates. If the cell has a hyperlink, it will return 'true' and
-// the link address, otherwise it will return 'false' and an empty link
-// address.
+// GetCellHyperLink provides a function to get cell hyperlink by given
+// worksheet name and axis. Boolean type value link will be true if the cell
+// has a hyperlink and the target is the address of the hyperlink. Otherwise,
+// the value of link will be false and the value of the target will be a blank
+// string. For example get hyperlink of Sheet1!H6:
 //
-// For example, get a hyperlink to a 'H6' cell on a worksheet named 'Sheet1':
+//    link, target, err := f.GetCellHyperLink("Sheet1", "H6")
 //
-//	link, target, err := f.GetCellHyperLink("Sheet1", "H6")
 func (f *File) GetCellHyperLink(sheet, axis string) (bool, string, error) {
 	// Check for correct cell name
 	if _, _, err := SplitCellName(axis); err != nil {
@@ -711,26 +679,23 @@ type HyperlinkOpts struct {
 // the other functions such as `SetCellStyle` or `SetSheetRow`. The below is
 // example for external link.
 //
-//	display, tooltip := "https://github.com/xuri/excelize", "Excelize on GitHub"
-//	if err := f.SetCellHyperLink("Sheet1", "A3",
-//	    "https://github.com/xuri/excelize", "External", excelize.HyperlinkOpts{
-//	        Display: &display,
-//	        Tooltip: &tooltip,
-//	    }); err != nil {
-//	    fmt.Println(err)
-//	}
-//	// Set underline and font color style for the cell.
-//	style, err := f.NewStyle(&excelize.Style{
-//	    Font: &excelize.Font{Color: "#1265BE", Underline: "single"},
-//	})
-//	if err != nil {
-//	    fmt.Println(err)
-//	}
-//	err = f.SetCellStyle("Sheet1", "A3", "A3", style)
+//    if err := f.SetCellHyperLink("Sheet1", "A3",
+//        "https://github.com/xuri/excelize", "External"); err != nil {
+//        fmt.Println(err)
+//    }
+//    // Set underline and font color style for the cell.
+//    style, err := f.NewStyle(&excelize.Style{
+//        Font: &excelize.Font{Color: "#1265BE", Underline: "single"},
+//    })
+//    if err != nil {
+//        fmt.Println(err)
+//    }
+//    err = f.SetCellStyle("Sheet1", "A3", "A3", style)
 //
 // This is another example for "Location":
 //
-//	err := f.SetCellHyperLink("Sheet1", "A3", "Sheet1!A40", "Location")
+//    err := f.SetCellHyperLink("Sheet1", "A3", "Sheet1!A40", "Location")
+//
 func (f *File) SetCellHyperLink(sheet, axis, link, linkType string, opts ...HyperlinkOpts) error {
 	// Check for correct cell name
 	if _, _, err := SplitCellName(axis); err != nil {
@@ -746,16 +711,9 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string, opts ...Hype
 	}
 
 	var linkData xlsxHyperlink
-	idx := -1
+
 	if ws.Hyperlinks == nil {
 		ws.Hyperlinks = new(xlsxHyperlinks)
-	}
-	for i, hyperlink := range ws.Hyperlinks.Hyperlink {
-		if hyperlink.Ref == axis {
-			idx = i
-			linkData = hyperlink
-			break
-		}
 	}
 
 	if len(ws.Hyperlinks.Hyperlink) > TotalSheetHyperlinks {
@@ -764,12 +722,12 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string, opts ...Hype
 
 	switch linkType {
 	case "External":
-		sheetPath, _ := f.getSheetXMLPath(sheet)
-		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
-		rID := f.setRels(linkData.RID, sheetRels, SourceRelationshipHyperLink, link, linkType)
 		linkData = xlsxHyperlink{
 			Ref: axis,
 		}
+		sheetPath := f.sheetMap[trimSheetName(sheet)]
+		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
+		rID := f.addRels(sheetRels, SourceRelationshipHyperLink, link, linkType)
 		linkData.RID = "rId" + strconv.Itoa(rID)
 		f.addSheetNameSpace(sheet, SourceRelationship)
 	case "Location":
@@ -789,21 +747,36 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string, opts ...Hype
 			linkData.Tooltip = *o.Tooltip
 		}
 	}
-	if idx == -1 {
-		ws.Hyperlinks.Hyperlink = append(ws.Hyperlinks.Hyperlink, linkData)
-		return err
-	}
-	ws.Hyperlinks.Hyperlink[idx] = linkData
-	return err
+
+	ws.Hyperlinks.Hyperlink = append(ws.Hyperlinks.Hyperlink, linkData)
+	return nil
 }
 
-// getCellRichText returns rich text of cell by given string item.
-func getCellRichText(si *xlsxSI) (runs []RichTextRun) {
+// GetCellRichText provides a function to get rich text of cell by given
+// worksheet.
+func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err error) {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return
+	}
+	cellData, _, _, err := f.prepareCell(ws, cell)
+	if err != nil {
+		return
+	}
+	siIdx, err := strconv.Atoi(cellData.V)
+	if nil != err {
+		return
+	}
+	sst := f.sharedStringsReader()
+	if len(sst.SI) <= siIdx || siIdx < 0 {
+		return
+	}
+	si := sst.SI[siIdx]
 	for _, v := range si.R {
 		run := RichTextRun{
 			Text: v.T.Val,
 		}
-		if v.RPr != nil {
+		if nil != v.RPr {
 			font := Font{Underline: "none"}
 			font.Bold = v.RPr.B != nil
 			font.Italic = v.RPr.I != nil
@@ -820,36 +793,13 @@ func getCellRichText(si *xlsxSI) (runs []RichTextRun) {
 				font.Size = *v.RPr.Sz.Val
 			}
 			font.Strike = v.RPr.Strike != nil
-			if v.RPr.Color != nil {
+			if nil != v.RPr.Color {
 				font.Color = strings.TrimPrefix(v.RPr.Color.RGB, "FF")
 			}
 			run.Font = &font
 		}
 		runs = append(runs, run)
 	}
-	return
-}
-
-// GetCellRichText provides a function to get rich text of cell by given
-// worksheet.
-func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err error) {
-	ws, err := f.workSheetReader(sheet)
-	if err != nil {
-		return
-	}
-	cellData, _, _, err := f.prepareCell(ws, cell)
-	if err != nil {
-		return
-	}
-	siIdx, err := strconv.Atoi(cellData.V)
-	if err != nil || cellData.T != "s" {
-		return
-	}
-	sst := f.sharedStringsReader()
-	if len(sst.SI) <= siIdx || siIdx < 0 {
-		return
-	}
-	runs = getCellRichText(&sst.SI[siIdx])
 	return
 }
 
@@ -872,10 +822,7 @@ func newRpr(fnt *Font) *xlsxRPr {
 	if fnt.Family != "" {
 		rpr.RFont = &attrValString{Val: &fnt.Family}
 	}
-	if inStrSlice([]string{"baseline", "superscript", "subscript"}, fnt.VertAlign, true) != -1 {
-		rpr.VertAlign = &attrValString{Val: &fnt.VertAlign}
-	}
-	if fnt.Size > 0 {
+	if fnt.Size > 0.0 {
 		rpr.Sz = &attrValFloat{Val: &fnt.Size}
 	}
 	if fnt.Color != "" {
@@ -888,120 +835,106 @@ func newRpr(fnt *Font) *xlsxRPr {
 // worksheet. For example, set rich text on the A1 cell of the worksheet named
 // Sheet1:
 //
-//	package main
+//    package main
 //
-//	import (
-//	    "fmt"
+//    import (
+//        "fmt"
 //
-//	    "github.com/xuri/excelize/v2"
-//	)
+//        "github.com/xuri/excelize/v2"
+//    )
 //
-//	func main() {
-//	    f := excelize.NewFile()
-//	    if err := f.SetRowHeight("Sheet1", 1, 35); err != nil {
-//	        fmt.Println(err)
-//	        return
-//	    }
-//	    if err := f.SetColWidth("Sheet1", "A", "A", 44); err != nil {
-//	        fmt.Println(err)
-//	        return
-//	    }
-//	    if err := f.SetCellRichText("Sheet1", "A1", []excelize.RichTextRun{
-//	        {
-//	            Text: "bold",
-//	            Font: &excelize.Font{
-//	                Bold:   true,
-//	                Color:  "2354e8",
-//	                Family: "Times New Roman",
-//	            },
-//	        },
-//	        {
-//	            Text: " and ",
-//	            Font: &excelize.Font{
-//	                Family: "Times New Roman",
-//	            },
-//	        },
-//	        {
-//	            Text: "italic ",
-//	            Font: &excelize.Font{
-//	                Bold:   true,
-//	                Color:  "e83723",
-//	                Italic: true,
-//	                Family: "Times New Roman",
-//	            },
-//	        },
-//	        {
-//	            Text: "text with color and font-family,",
-//	            Font: &excelize.Font{
-//	                Bold:   true,
-//	                Color:  "2354e8",
-//	                Family: "Times New Roman",
-//	            },
-//	        },
-//	        {
-//	            Text: "\r\nlarge text with ",
-//	            Font: &excelize.Font{
-//	                Size:  14,
-//	                Color: "ad23e8",
-//	            },
-//	        },
-//	        {
-//	            Text: "strike",
-//	            Font: &excelize.Font{
-//	                Color:  "e89923",
-//	                Strike: true,
-//	            },
-//	        },
-//	        {
-//	            Text: " superscript",
-//	            Font: &excelize.Font{
-//	                Color:     "dbc21f",
-//	                VertAlign: "superscript",
-//	            },
-//	        },
-//	        {
-//	            Text: " and ",
-//	            Font: &excelize.Font{
-//	                Size:      14,
-//	                Color:     "ad23e8",
-//	                VertAlign: "baseline",
-//	            },
-//	        },
-//	        {
-//	            Text: "underline",
-//	            Font: &excelize.Font{
-//	                Color:     "23e833",
-//	                Underline: "single",
-//	            },
-//	        },
-//	        {
-//	            Text: " subscript.",
-//	            Font: &excelize.Font{
-//	                Color:     "017505",
-//	                VertAlign: "subscript",
-//	            },
-//	        },
-//	    }); err != nil {
-//	        fmt.Println(err)
-//	        return
-//	    }
-//	    style, err := f.NewStyle(&excelize.Style{
-//	        Alignment: &excelize.Alignment{
-//	            WrapText: true,
-//	        },
-//	    })
-//	    if err != nil {
-//	        fmt.Println(err)
-//	        return
-//	    }
-//	    if err := f.SetCellStyle("Sheet1", "A1", "A1", style); err != nil {
-//	        fmt.Println(err)
-//	        return
-//	    }
-//	    if err := f.SaveAs("Book1.xlsx"); err != nil {
-//	        fmt.Println(err)
-//	    }
-//	}
+//    func main() {
+//        f := excelize.NewFile()
+//        if err := f.SetRowHeight("Sheet1", 1, 35); err != nil {
+//            fmt.Println(err)
+//            return
+//        }
+//        if err := f.SetColWidth("Sheet1", "A", "A", 44); err != nil {
+//            fmt.Println(err)
+//            return
+//        }
+//        if err := f.SetCellRichText("Sheet1", "A1", []excelize.RichTextRun{
+//            {
+//                Text: "bold",
+//                Font: &excelize.Font{
+//                    Bold:   true,
+//                    Color:  "2354e8",
+//                    Family: "Times New Roman",
+//                },
+//            },
+//            {
+//                Text: " and ",
+//                Font: &excelize.Font{
+//                    Family: "Times New Roman",
+//                },
+//            },
+//            {
+//                Text: " italic",
+//                Font: &excelize.Font{
+//                    Bold:   true,
+//                    Color:  "e83723",
+//                    Italic: true,
+//                    Family: "Times New Roman",
+//                },
+//            },
+//            {
+//                Text: "text with color and font-family,",
+//                Font: &excelize.Font{
+//                    Bold:   true,
+//                    Color:  "2354e8",
+//                    Family: "Times New Roman",
+//                },
+//            },
+//            {
+//                Text: "\r\nlarge text with ",
+//                Font: &excelize.Font{
+//                    Size:  14,
+//                    Color: "ad23e8",
+//                },
+//            },
+//            {
+//                Text: "strike",
+//                Font: &excelize.Font{
+//                    Color:  "e89923",
+//                    Strike: true,
+//                },
+//            },
+//            {
+//                Text: " and ",
+//                Font: &excelize.Font{
+//                    Size:  14,
+//                    Color: "ad23e8",
+//                },
+//            },
+//            {
+//                Text: "underline.",
+//                Font: &excelize.Font{
+//                    Color:     "23e833",
+//                    Underline: "single",
+//                },
+//            },
+//        }); err != nil {
+//            fmt.Println(err)
+//            return
+//        }
+//        style, err := f.NewStyle(&excelize.Style{
+//            Alignment: &excelize.Alignment{
+//                WrapText: true,
+//            },
+//        })
+//        if err != nil {
+//            fmt.Println(err)
+//            return
+//        }
+//        if err := f.SetCellStyle("Sheet1", "A1", "A1", style); err != nil {
+//            fmt.Println(err)
+//            return
+//        }
+//        if err := f.SaveAs("Book1.xlsx"); err != nil {
+//            fmt.Println(err)
+//        }
+//    }
+//
 func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -1047,44 +980,26 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 }
 
 // SetSheetRow writes an array to row by given worksheet name, starting
-// coordinate and a pointer to array type 'slice'. This function is
-// concurrency safe. For example, writes an array to row 6 start with the cell
-// B6 on Sheet1:
-//
-//	err := f.SetSheetRow("Sheet1", "B6", &[]interface{}{"1", nil, 2})
-func (f *File) SetSheetRow(sheet, axis string, slice interface{}) error {
-	return f.setSheetCells(sheet, axis, slice, rows)
-}
-
-// SetSheetCol writes an array to column by given worksheet name, starting
 // coordinate and a pointer to array type 'slice'. For example, writes an
-// array to column B start with the cell B6 on Sheet1:
+// array to row 6 start with the cell B6 on Sheet1:
 //
-//	err := f.SetSheetCol("Sheet1", "B6", &[]interface{}{"1", nil, 2})
-func (f *File) SetSheetCol(sheet, axis string, slice interface{}) error {
-	return f.setSheetCells(sheet, axis, slice, columns)
-}
-
-// setSheetCells provides a function to set worksheet cells value.
-func (f *File) setSheetCells(sheet, axis string, slice interface{}, dir adjustDirection) error {
+//     err := f.SetSheetRow("Sheet1", "B6", &[]interface{}{"1", nil, 2})
+//
+func (f *File) SetSheetRow(sheet, axis string, slice interface{}) error {
 	col, row, err := CellNameToCoordinates(axis)
 	if err != nil {
 		return err
 	}
+
 	// Make sure 'slice' is a Ptr to Slice
 	v := reflect.ValueOf(slice)
 	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Slice {
 		return ErrParameterInvalid
 	}
 	v = v.Elem()
+
 	for i := 0; i < v.Len(); i++ {
-		var cell string
-		var err error
-		if dir == rows {
-			cell, err = CoordinatesToCellName(col+i, row)
-		} else {
-			cell, err = CoordinatesToCellName(col, row+i)
-		}
+		cell, err := CoordinatesToCellName(col+i, row)
 		// Error should never happen here. But keep checking to early detect regressions
 		// if it will be introduced in the future.
 		if err != nil {
@@ -1184,19 +1099,17 @@ func (f *File) formattedValue(s int, v string, raw bool) string {
 	if styleSheet.CellXfs.Xf[s].NumFmtID != nil {
 		numFmtID = *styleSheet.CellXfs.Xf[s].NumFmtID
 	}
-	date1904, wb := false, f.workbookReader()
-	if wb != nil && wb.WorkbookPr != nil {
-		date1904 = wb.WorkbookPr.Date1904
-	}
-	if ok := builtInNumFmtFunc[numFmtID]; ok != nil {
-		return ok(v, builtInNumFmt[numFmtID], date1904)
+
+	ok := builtInNumFmtFunc[numFmtID]
+	if ok != nil {
+		return ok(v, builtInNumFmt[numFmtID])
 	}
 	if styleSheet == nil || styleSheet.NumFmts == nil {
 		return v
 	}
 	for _, xlsxFmt := range styleSheet.NumFmts.NumFmt {
 		if xlsxFmt.NumFmtID == numFmtID {
-			return format(v, xlsxFmt.FormatCode, date1904)
+			return format(v, xlsxFmt.FormatCode)
 		}
 	}
 	return v
@@ -1205,19 +1118,16 @@ func (f *File) formattedValue(s int, v string, raw bool) string {
 // prepareCellStyle provides a function to prepare style index of cell in
 // worksheet by given column index and style index.
 func (f *File) prepareCellStyle(ws *xlsxWorksheet, col, row, style int) int {
-	if style != 0 {
-		return style
-	}
-	if row <= len(ws.SheetData.Row) {
-		if styleID := ws.SheetData.Row[row-1].S; styleID != 0 {
-			return styleID
-		}
-	}
-	if ws.Cols != nil {
+	if ws.Cols != nil && style == 0 {
 		for _, c := range ws.Cols.Col {
 			if c.Min <= col && col <= c.Max && c.Style != 0 {
 				return c.Style
 			}
+		}
+	}
+	for rowIdx := range ws.SheetData.Row {
+		if styleID := ws.SheetData.Row[rowIdx].S; style == 0 && styleID != 0 {
+			return styleID
 		}
 	}
 	return style

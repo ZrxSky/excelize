@@ -2,12 +2,11 @@ package excelize
 
 import (
 	"fmt"
-	"image"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
-	"io"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -33,7 +32,9 @@ func BenchmarkAddPictureFromBytes(b *testing.B) {
 
 func TestAddPicture(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	assert.NoError(t, err)
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
 
 	// Test add picture to worksheet with offset and location hyperlink.
 	assert.NoError(t, f.AddPicture("Sheet2", "I9", filepath.Join("test", "images", "excel.jpg"),
@@ -65,7 +66,7 @@ func TestAddPicture(t *testing.T) {
 	assert.NoError(t, f.AddPicture("Sheet1", "Q22", filepath.Join("test", "images", "excel.tif"), ""))
 
 	// Test write file to given path.
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPicture1.xlsx")))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPicture.xlsx")))
 	assert.NoError(t, f.Close())
 }
 
@@ -74,39 +75,26 @@ func TestAddPictureErrors(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Test add picture to worksheet with invalid file path.
-	assert.Error(t, f.AddPicture("Sheet1", "G21", filepath.Join("test", "not_exists_dir", "not_exists.icon"), ""))
+	err = f.AddPicture("Sheet1", "G21", filepath.Join("test", "not_exists_dir", "not_exists.icon"), "")
+	if assert.Error(t, err) {
+		assert.True(t, os.IsNotExist(err), "Expected os.IsNotExist(err) == true")
+	}
 
 	// Test add picture to worksheet with unsupported file type.
-	assert.EqualError(t, f.AddPicture("Sheet1", "G21", filepath.Join("test", "Book1.xlsx"), ""), ErrImgExt.Error())
-	assert.EqualError(t, f.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", "jpg", make([]byte, 1)), ErrImgExt.Error())
+	err = f.AddPicture("Sheet1", "G21", filepath.Join("test", "Book1.xlsx"), "")
+	assert.EqualError(t, err, ErrImgExt.Error())
+
+	err = f.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", "jpg", make([]byte, 1))
+	assert.EqualError(t, err, ErrImgExt.Error())
 
 	// Test add picture to worksheet with invalid file data.
-	assert.EqualError(t, f.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", ".jpg", make([]byte, 1)), image.ErrFormat.Error())
-
-	// Test add picture with custom image decoder and encoder.
-	decode := func(r io.Reader) (image.Image, error) { return nil, nil }
-	decodeConfig := func(r io.Reader) (image.Config, error) { return image.Config{Height: 100, Width: 90}, nil }
-	image.RegisterFormat("emf", "", decode, decodeConfig)
-	image.RegisterFormat("wmf", "", decode, decodeConfig)
-	image.RegisterFormat("emz", "", decode, decodeConfig)
-	image.RegisterFormat("wmz", "", decode, decodeConfig)
-	assert.NoError(t, f.AddPicture("Sheet1", "Q1", filepath.Join("test", "images", "excel.emf"), ""))
-	assert.NoError(t, f.AddPicture("Sheet1", "Q7", filepath.Join("test", "images", "excel.wmf"), ""))
-	assert.NoError(t, f.AddPicture("Sheet1", "Q13", filepath.Join("test", "images", "excel.emz"), ""))
-	assert.NoError(t, f.AddPicture("Sheet1", "Q19", filepath.Join("test", "images", "excel.wmz"), ""))
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPicture2.xlsx")))
+	err = f.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", ".jpg", make([]byte, 1))
+	assert.EqualError(t, err, "image: unknown format")
 	assert.NoError(t, f.Close())
 }
 
 func TestGetPicture(t *testing.T) {
-	f := NewFile()
-	assert.NoError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.png"), ""))
-	name, content, err := f.GetPicture("Sheet1", "A1")
-	assert.NoError(t, err)
-	assert.Equal(t, 13233, len(content))
-	assert.Equal(t, "image1.png", name)
-
-	f, err = prepareTestBook1()
+	f, err := prepareTestBook1()
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -115,6 +103,7 @@ func TestGetPicture(t *testing.T) {
 	assert.NoError(t, err)
 	if !assert.NotEmpty(t, filepath.Join("test", file)) || !assert.NotEmpty(t, raw) ||
 		!assert.NoError(t, ioutil.WriteFile(filepath.Join("test", file), raw, 0o644)) {
+
 		t.FailNow()
 	}
 
@@ -124,7 +113,7 @@ func TestGetPicture(t *testing.T) {
 
 	// Try to get picture from a worksheet that doesn't contain any images.
 	file, raw, err = f.GetPicture("Sheet3", "I9")
-	assert.EqualError(t, err, "sheet Sheet3 does not exist")
+	assert.EqualError(t, err, "sheet Sheet3 is not exist")
 	assert.Empty(t, file)
 	assert.Empty(t, raw)
 
@@ -173,7 +162,7 @@ func TestGetPicture(t *testing.T) {
 }
 
 func TestAddDrawingPicture(t *testing.T) {
-	// Test addDrawingPicture with illegal cell coordinates.
+	// testing addDrawingPicture with illegal cell coordinates.
 	f := NewFile()
 	assert.EqualError(t, f.addDrawingPicture("sheet1", "", "A", "", 0, 0, 0, 0, nil), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
@@ -192,7 +181,7 @@ func TestAddPictureFromBytes(t *testing.T) {
 		return true
 	})
 	assert.Equal(t, 1, imageCount, "Duplicate image should only be stored once.")
-	assert.EqualError(t, f.AddPictureFromBytes("SheetN", fmt.Sprint("A", 1), "", "logo", ".png", imgFile), "sheet SheetN does not exist")
+	assert.EqualError(t, f.AddPictureFromBytes("SheetN", fmt.Sprint("A", 1), "", "logo", ".png", imgFile), "sheet SheetN is not exist")
 }
 
 func TestDeletePicture(t *testing.T) {
@@ -203,7 +192,7 @@ func TestDeletePicture(t *testing.T) {
 	assert.NoError(t, f.DeletePicture("Sheet1", "P1"))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeletePicture.xlsx")))
 	// Test delete picture on not exists worksheet.
-	assert.EqualError(t, f.DeletePicture("SheetN", "A1"), "sheet SheetN does not exist")
+	assert.EqualError(t, f.DeletePicture("SheetN", "A1"), "sheet SheetN is not exist")
 	// Test delete picture with invalid coordinates.
 	assert.EqualError(t, f.DeletePicture("Sheet1", ""), newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())
 	assert.NoError(t, f.Close())
@@ -215,7 +204,7 @@ func TestDrawingResize(t *testing.T) {
 	f := NewFile()
 	// Test calculate drawing resize on not exists worksheet.
 	_, _, _, _, err := f.drawingResize("SheetN", "A1", 1, 1, nil)
-	assert.EqualError(t, err, "sheet SheetN does not exist")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
 	// Test calculate drawing resize with invalid coordinates.
 	_, _, _, _, err = f.drawingResize("Sheet1", "", 1, 1, nil)
 	assert.EqualError(t, err, newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())

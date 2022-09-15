@@ -22,9 +22,10 @@ import (
 //
 // PivotTableStyleName: The built-in pivot table style names
 //
-//	PivotStyleLight1 - PivotStyleLight28
-//	PivotStyleMedium1 - PivotStyleMedium28
-//	PivotStyleDark1 - PivotStyleDark28
+//    PivotStyleLight1 - PivotStyleLight28
+//    PivotStyleMedium1 - PivotStyleMedium28
+//    PivotStyleDark1 - PivotStyleDark28
+//
 type PivotTableOption struct {
 	pivotTableSheetName string
 	DataRange           string
@@ -54,17 +55,17 @@ type PivotTableOption struct {
 // field. The default value is sum. The possible values for this attribute
 // are:
 //
-//	Average
-//	Count
-//	CountNums
-//	Max
-//	Min
-//	Product
-//	StdDev
-//	StdDevp
-//	Sum
-//	Var
-//	Varp
+//     Average
+//     Count
+//     CountNums
+//     Max
+//     Min
+//     Product
+//     StdDev
+//     StdDevp
+//     Sum
+//     Var
+//     Varp
 //
 // Name specifies the name of the data field. Maximum 255 characters
 // are allowed in data field name, excess characters will be truncated.
@@ -84,50 +85,51 @@ type PivotTableField struct {
 // For example, create a pivot table on the Sheet1!$G$2:$M$34 area with the
 // region Sheet1!$A$1:$E$31 as the data source, summarize by sum for sales:
 //
-//	package main
+//    package main
 //
-//	import (
-//	    "fmt"
-//	    "math/rand"
+//    import (
+//        "fmt"
+//        "math/rand"
 //
-//	    "github.com/xuri/excelize/v2"
-//	)
+//        "github.com/xuri/excelize/v2"
+//    )
 //
-//	func main() {
-//	    f := excelize.NewFile()
-//	    // Create some data in a sheet
-//	    month := []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
-//	    year := []int{2017, 2018, 2019}
-//	    types := []string{"Meat", "Dairy", "Beverages", "Produce"}
-//	    region := []string{"East", "West", "North", "South"}
-//	    f.SetSheetRow("Sheet1", "A1", &[]string{"Month", "Year", "Type", "Sales", "Region"})
-//	    for row := 2; row < 32; row++ {
-//	        f.SetCellValue("Sheet1", fmt.Sprintf("A%d", row), month[rand.Intn(12)])
-//	        f.SetCellValue("Sheet1", fmt.Sprintf("B%d", row), year[rand.Intn(3)])
-//	        f.SetCellValue("Sheet1", fmt.Sprintf("C%d", row), types[rand.Intn(4)])
-//	        f.SetCellValue("Sheet1", fmt.Sprintf("D%d", row), rand.Intn(5000))
-//	        f.SetCellValue("Sheet1", fmt.Sprintf("E%d", row), region[rand.Intn(4)])
-//	    }
-//	    if err := f.AddPivotTable(&excelize.PivotTableOption{
-//	        DataRange:       "Sheet1!$A$1:$E$31",
-//	        PivotTableRange: "Sheet1!$G$2:$M$34",
-//	        Rows:            []excelize.PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
-//	        Filter:          []excelize.PivotTableField{{Data: "Region"}},
-//	        Columns:         []excelize.PivotTableField{{Data: "Type", DefaultSubtotal: true}},
-//	        Data:            []excelize.PivotTableField{{Data: "Sales", Name: "Summarize", Subtotal: "Sum"}},
-//	        RowGrandTotals:  true,
-//	        ColGrandTotals:  true,
-//	        ShowDrill:       true,
-//	        ShowRowHeaders:  true,
-//	        ShowColHeaders:  true,
-//	        ShowLastColumn:  true,
-//	    }); err != nil {
-//	        fmt.Println(err)
-//	    }
-//	    if err := f.SaveAs("Book1.xlsx"); err != nil {
-//	        fmt.Println(err)
-//	    }
-//	}
+//    func main() {
+//        f := excelize.NewFile()
+//        // Create some data in a sheet
+//        month := []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
+//        year := []int{2017, 2018, 2019}
+//        types := []string{"Meat", "Dairy", "Beverages", "Produce"}
+//        region := []string{"East", "West", "North", "South"}
+//        f.SetSheetRow("Sheet1", "A1", &[]string{"Month", "Year", "Type", "Sales", "Region"})
+//        for i := 0; i < 30; i++ {
+//            f.SetCellValue("Sheet1", fmt.Sprintf("A%d", i+2), month[rand.Intn(12)])
+//            f.SetCellValue("Sheet1", fmt.Sprintf("B%d", i+2), year[rand.Intn(3)])
+//            f.SetCellValue("Sheet1", fmt.Sprintf("C%d", i+2), types[rand.Intn(4)])
+//            f.SetCellValue("Sheet1", fmt.Sprintf("D%d", i+2), rand.Intn(5000))
+//            f.SetCellValue("Sheet1", fmt.Sprintf("E%d", i+2), region[rand.Intn(4)])
+//        }
+//        if err := f.AddPivotTable(&excelize.PivotTableOption{
+//            DataRange:       "Sheet1!$A$1:$E$31",
+//            PivotTableRange: "Sheet1!$G$2:$M$34",
+//            Rows:            []excelize.PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
+//            Filter:          []excelize.PivotTableField{{Data: "Region"}},
+//            Columns:         []excelize.PivotTableField{{Data: "Type", DefaultSubtotal: true}},
+//            Data:            []excelize.PivotTableField{{Data: "Sales", Name: "Summarize", Subtotal: "Sum"}},
+//            RowGrandTotals:  true,
+//            ColGrandTotals:  true,
+//            ShowDrill:       true,
+//            ShowRowHeaders:  true,
+//            ShowColHeaders:  true,
+//            ShowLastColumn:  true,
+//        }); err != nil {
+//            fmt.Println(err)
+//        }
+//        if err := f.SaveAs("Book1.xlsx"); err != nil {
+//            fmt.Println(err)
+//        }
+//    }
+//
 func (f *File) AddPivotTable(opt *PivotTableOption) error {
 	// parameter validation
 	_, pivotTableSheetPath, err := f.parseFormatPivotTableSet(opt)
@@ -139,7 +141,7 @@ func (f *File) AddPivotTable(opt *PivotTableOption) error {
 	pivotCacheID := f.countPivotCache() + 1
 
 	sheetRelationshipsPivotTableXML := "../pivotTables/pivotTable" + strconv.Itoa(pivotTableID) + ".xml"
-	pivotTableXML := strings.ReplaceAll(sheetRelationshipsPivotTableXML, "..", "xl")
+	pivotTableXML := strings.Replace(sheetRelationshipsPivotTableXML, "..", "xl", -1)
 	pivotCacheXML := "xl/pivotCache/pivotCacheDefinition" + strconv.Itoa(pivotCacheID) + ".xml"
 	err = f.addPivotCache(pivotCacheXML, opt)
 	if err != nil {
@@ -188,9 +190,9 @@ func (f *File) parseFormatPivotTableSet(opt *PivotTableOption) (*xlsxWorksheet, 
 	if err != nil {
 		return dataSheet, "", err
 	}
-	pivotTableSheetPath, ok := f.getSheetXMLPath(pivotTableSheetName)
+	pivotTableSheetPath, ok := f.sheetMap[trimSheetName(pivotTableSheetName)]
 	if !ok {
-		return dataSheet, pivotTableSheetPath, fmt.Errorf("sheet %s does not exist", pivotTableSheetName)
+		return dataSheet, pivotTableSheetPath, fmt.Errorf("sheet %s is not exist", pivotTableSheetName)
 	}
 	return dataSheet, pivotTableSheetPath, err
 }
@@ -204,7 +206,7 @@ func (f *File) adjustRange(rangeStr string) (string, []int, error) {
 	if len(rng) != 2 {
 		return "", []int{}, ErrParameterInvalid
 	}
-	trimRng := strings.ReplaceAll(rng[1], "$", "")
+	trimRng := strings.Replace(rng[1], "$", "", -1)
 	coordinates, err := areaRefToCoordinates(trimRng)
 	if err != nil {
 		return rng[0], []int{}, err
@@ -540,7 +542,6 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOptio
 			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
 				Name:            f.getPivotTableFieldName(name, opt.Rows),
 				Axis:            "axisRow",
-				DataField:       inPivotTableField(opt.Data, name) != -1,
 				Compact:         &rowOptions.Compact,
 				Outline:         &rowOptions.Outline,
 				DefaultSubtotal: &rowOptions.DefaultSubtotal,
@@ -553,9 +554,8 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOptio
 		}
 		if inPivotTableField(opt.Filter, name) != -1 {
 			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
-				Axis:      "axisPage",
-				DataField: inPivotTableField(opt.Data, name) != -1,
-				Name:      f.getPivotTableFieldName(name, opt.Columns),
+				Axis: "axisPage",
+				Name: f.getPivotTableFieldName(name, opt.Columns),
 				Items: &xlsxItems{
 					Count: 1,
 					Item: []*xlsxItem{
@@ -576,7 +576,6 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOptio
 			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
 				Name:            f.getPivotTableFieldName(name, opt.Columns),
 				Axis:            "axisCol",
-				DataField:       inPivotTableField(opt.Data, name) != -1,
 				Compact:         &columnOptions.Compact,
 				Outline:         &columnOptions.Outline,
 				DefaultSubtotal: &columnOptions.DefaultSubtotal,

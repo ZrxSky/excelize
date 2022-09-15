@@ -43,7 +43,7 @@ func (f *File) ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 		if unzipSize > f.options.UnzipSizeLimit {
 			return fileList, worksheets, newUnzipSizeLimitError(f.options.UnzipSizeLimit)
 		}
-		fileName := strings.ReplaceAll(v.Name, "\\", "/")
+		fileName := strings.Replace(v.Name, "\\", "/", -1)
 		if partName, ok := docPart[strings.ToLower(fileName)]; ok {
 			fileName = partName
 		}
@@ -148,7 +148,8 @@ func readFile(file *zip.File) ([]byte, error) {
 //
 // Example:
 //
-//	excelize.SplitCellName("AK74") // return "AK", 74, nil
+//     excelize.SplitCellName("AK74") // return "AK", 74, nil
+//
 func SplitCellName(cell string) (string, int, error) {
 	alpha := func(r rune) bool {
 		return ('A' <= r && r <= 'Z') || ('a' <= r && r <= 'z') || (r == 36)
@@ -186,12 +187,13 @@ func JoinCellName(col string, row int) (string, error) {
 }
 
 // ColumnNameToNumber provides a function to convert Excel sheet column name
-// (case-insensitive) to int. The function returns an error if column name
-// incorrect.
+// to int. Column name case-insensitive. The function returns an error if
+// column name incorrect.
 //
 // Example:
 //
-//	excelize.ColumnNameToNumber("AK") // returns 37, nil
+//     excelize.ColumnNameToNumber("AK") // returns 37, nil
+//
 func ColumnNameToNumber(name string) (int, error) {
 	if len(name) == 0 {
 		return -1, newInvalidColumnNameError(name)
@@ -209,7 +211,7 @@ func ColumnNameToNumber(name string) (int, error) {
 		}
 		multi *= 26
 	}
-	if col > MaxColumns {
+	if col > TotalColumns {
 		return -1, ErrColumnNumber
 	}
 	return col, nil
@@ -220,9 +222,13 @@ func ColumnNameToNumber(name string) (int, error) {
 //
 // Example:
 //
-//	excelize.ColumnNumberToName(37) // returns "AK", nil
+//     excelize.ColumnNumberToName(37) // returns "AK", nil
+//
 func ColumnNumberToName(num int) (string, error) {
-	if num < MinColumns || num > MaxColumns {
+	if num < 1 {
+		return "", fmt.Errorf("incorrect column number %d", num)
+	}
+	if num > TotalColumns {
 		return "", ErrColumnNumber
 	}
 	var col string
@@ -238,8 +244,9 @@ func ColumnNumberToName(num int) (string, error) {
 //
 // Example:
 //
-//	excelize.CellNameToCoordinates("A1") // returns 1, 1, nil
-//	excelize.CellNameToCoordinates("Z3") // returns 26, 3, nil
+//    excelize.CellNameToCoordinates("A1") // returns 1, 1, nil
+//    excelize.CellNameToCoordinates("Z3") // returns 26, 3, nil
+//
 func CellNameToCoordinates(cell string) (int, int, error) {
 	colName, row, err := SplitCellName(cell)
 	if err != nil {
@@ -257,8 +264,9 @@ func CellNameToCoordinates(cell string) (int, int, error) {
 //
 // Example:
 //
-//	excelize.CoordinatesToCellName(1, 1) // returns "A1", nil
-//	excelize.CoordinatesToCellName(1, 1, true) // returns "$A$1", nil
+//    excelize.CoordinatesToCellName(1, 1) // returns "A1", nil
+//    excelize.CoordinatesToCellName(1, 1, true) // returns "$A$1", nil
+//
 func CoordinatesToCellName(col, row int, abs ...bool) (string, error) {
 	if col < 1 || row < 1 {
 		return "", fmt.Errorf("invalid cell coordinates [%d, %d]", col, row)
@@ -276,7 +284,7 @@ func CoordinatesToCellName(col, row int, abs ...bool) (string, error) {
 // areaRefToCoordinates provides a function to convert area reference to a
 // pair of coordinates.
 func areaRefToCoordinates(ref string) ([]int, error) {
-	rng := strings.Split(strings.ReplaceAll(ref, "$", ""), ":")
+	rng := strings.Split(strings.Replace(ref, "$", "", -1), ":")
 	if len(rng) < 2 {
 		return nil, ErrParameterInvalid
 	}
@@ -636,7 +644,7 @@ func (f *File) replaceNameSpaceBytes(path string, contentMarshal []byte) []byte 
 	if attr, ok := f.xmlAttr[path]; ok {
 		newXmlns = []byte(genXMLNamespace(attr))
 	}
-	return bytesReplace(contentMarshal, oldXmlns, bytes.ReplaceAll(newXmlns, []byte(" mc:Ignorable=\"r\""), []byte{}), -1)
+	return bytesReplace(contentMarshal, oldXmlns, newXmlns, -1)
 }
 
 // addNameSpaces provides a function to add an XML attribute by the given
@@ -685,7 +693,7 @@ func (f *File) setIgnorableNameSpace(path string, index int, ns xml.Attr) {
 
 // addSheetNameSpace add XML attribute for worksheet.
 func (f *File) addSheetNameSpace(sheet string, ns xml.Attr) {
-	name, _ := f.getSheetXMLPath(sheet)
+	name := f.sheetMap[trimSheetName(sheet)]
 	f.addNameSpaces(name, ns)
 }
 

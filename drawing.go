@@ -14,6 +14,7 @@ package excelize
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"log"
 	"reflect"
@@ -29,11 +30,10 @@ func (f *File) prepareDrawing(ws *xlsxWorksheet, drawingID int, sheet, drawingXM
 		// The worksheet already has a picture or chart relationships, use the relationships drawing ../drawings/drawing%d.xml.
 		sheetRelationshipsDrawingXML = f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
 		drawingID, _ = strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(sheetRelationshipsDrawingXML, "../drawings/drawing"), ".xml"))
-		drawingXML = strings.ReplaceAll(sheetRelationshipsDrawingXML, "..", "xl")
+		drawingXML = strings.Replace(sheetRelationshipsDrawingXML, "..", "xl", -1)
 	} else {
 		// Add first picture for given sheet.
-		sheetXMLPath, _ := f.getSheetXMLPath(sheet)
-		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/worksheets/") + ".rels"
+		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
 		rID := f.addRels(sheetRels, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
 		f.addSheetDrawing(sheet, rID)
 	}
@@ -45,8 +45,7 @@ func (f *File) prepareDrawing(ws *xlsxWorksheet, drawingID int, sheet, drawingXM
 func (f *File) prepareChartSheetDrawing(cs *xlsxChartsheet, drawingID int, sheet string) {
 	sheetRelationshipsDrawingXML := "../drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
 	// Only allow one chart in a chartsheet.
-	sheetXMLPath, _ := f.getSheetXMLPath(sheet)
-	sheetRels := "xl/chartsheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/chartsheets/") + ".rels"
+	sheetRels := "xl/chartsheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/chartsheets/") + ".rels"
 	rID := f.addRels(sheetRels, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
 	f.addSheetNameSpace(sheet, SourceRelationship)
 	cs.Drawing = &xlsxDrawing{
@@ -543,6 +542,9 @@ func (f *File) drawLineChart(formatSet *formatChart) *cPlotArea {
 			},
 			Ser:   f.drawChartSeries(formatSet),
 			DLbls: f.drawChartDLbls(formatSet),
+			Smooth: &attrValBool{
+				Val: boolPtr(false),
+			},
 			AxID: []*attrValInt{
 				{Val: intPtr(754001152)},
 				{Val: intPtr(753999904)},
@@ -754,7 +756,6 @@ func (f *File) drawChartSeries(formatSet *formatChart) *[]cSer {
 			DLbls:            f.drawChartSeriesDLbls(formatSet),
 			InvertIfNegative: &attrValBool{Val: boolPtr(false)},
 			Cat:              f.drawChartSeriesCat(formatSet.Series[k], formatSet),
-			Smooth:           &attrValBool{Val: boolPtr(formatSet.Series[k].Line.Smooth)},
 			Val:              f.drawChartSeriesVal(formatSet.Series[k], formatSet),
 			XVal:             f.drawChartSeriesXVal(formatSet.Series[k], formatSet),
 			YVal:             f.drawChartSeriesYVal(formatSet.Series[k], formatSet),
@@ -768,16 +769,6 @@ func (f *File) drawChartSeries(formatSet *formatChart) *[]cSer {
 // drawChartSeriesSpPr provides a function to draw the c:spPr element by given
 // format sets.
 func (f *File) drawChartSeriesSpPr(i int, formatSet *formatChart) *cSpPr {
-	var srgbClr *attrValString
-	var schemeClr *aSchemeClr
-
-	if color := stringPtr(formatSet.Series[i].Line.Color); *color != "" {
-		*color = strings.TrimPrefix(*color, "#")
-		srgbClr = &attrValString{Val: color}
-	} else {
-		schemeClr = &aSchemeClr{Val: "accent" + strconv.Itoa((formatSet.order+i)%6+1)}
-	}
-
 	spPrScatter := &cSpPr{
 		Ln: &aLn{
 			W:      25400,
@@ -789,8 +780,7 @@ func (f *File) drawChartSeriesSpPr(i int, formatSet *formatChart) *cSpPr {
 			W:   f.ptToEMUs(formatSet.Series[i].Line.Width),
 			Cap: "rnd", // rnd, sq, flat
 			SolidFill: &aSolidFill{
-				SchemeClr: schemeClr,
-				SrgbClr:   srgbClr,
+				SchemeClr: &aSchemeClr{Val: "accent" + strconv.Itoa((formatSet.order+i)%6+1)},
 			},
 		},
 	}
@@ -1330,7 +1320,7 @@ func (f *File) deleteDrawing(col, row int, drawingXML, drawingType string) (err 
 		deTwoCellAnchor = new(decodeTwoCellAnchor)
 		if err = f.xmlNewDecoder(strings.NewReader("<decodeTwoCellAnchor>" + wsDr.TwoCellAnchor[idx].GraphicFrame + "</decodeTwoCellAnchor>")).
 			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
-			err = newDecodeXMLError(err)
+			err = fmt.Errorf("xml decode error: %s", err)
 			return
 		}
 		if err = nil; deTwoCellAnchor.From != nil && decodeTwoCellAnchorFuncs[drawingType](deTwoCellAnchor) {

@@ -64,24 +64,7 @@ func TestConcurrency(t *testing.T) {
 				_, err := cols.Rows()
 				assert.NoError(t, err)
 			}
-			// Concurrency set columns style
-			assert.NoError(t, f.SetColStyle("Sheet1", "C:E", style))
-			// Concurrency get columns style
-			styleID, err := f.GetColStyle("Sheet1", "D")
-			assert.NoError(t, err)
-			assert.Equal(t, style, styleID)
-			// Concurrency set columns width
-			assert.NoError(t, f.SetColWidth("Sheet1", "A", "B", 10))
-			// Concurrency get columns width
-			width, err := f.GetColWidth("Sheet1", "A")
-			assert.NoError(t, err)
-			assert.Equal(t, 10.0, width)
-			// Concurrency set columns visible
-			assert.NoError(t, f.SetColVisible("Sheet1", "A:B", true))
-			// Concurrency get columns visible
-			visible, err := f.GetColVisible("Sheet1", "A")
-			assert.NoError(t, err)
-			assert.Equal(t, true, visible)
+
 			wg.Done()
 		}(i, t)
 	}
@@ -173,21 +156,6 @@ func TestSetCellValue(t *testing.T) {
 	f := NewFile()
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Now().UTC()), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Duration(1e13)), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
-	// Test set cell value with column and row style inherit
-	style1, err := f.NewStyle(&Style{NumFmt: 2})
-	assert.NoError(t, err)
-	style2, err := f.NewStyle(&Style{NumFmt: 9})
-	assert.NoError(t, err)
-	assert.NoError(t, f.SetColStyle("Sheet1", "B", style1))
-	assert.NoError(t, f.SetRowStyle("Sheet1", 1, 1, style2))
-	assert.NoError(t, f.SetCellValue("Sheet1", "B1", 0.5))
-	assert.NoError(t, f.SetCellValue("Sheet1", "B2", 0.5))
-	B1, err := f.GetCellValue("Sheet1", "B1")
-	assert.NoError(t, err)
-	assert.Equal(t, "50%", B1)
-	B2, err := f.GetCellValue("Sheet1", "B2")
-	assert.NoError(t, err)
-	assert.Equal(t, "0.50", B2)
 }
 
 func TestSetCellValues(t *testing.T) {
@@ -224,7 +192,7 @@ func TestSetCellTime(t *testing.T) {
 	} {
 		timezone, err := time.LoadLocation(location)
 		assert.NoError(t, err)
-		_, b, isNum, err := setCellTime(date.In(timezone), false)
+		_, b, isNum, err := setCellTime(date.In(timezone))
 		assert.NoError(t, err)
 		assert.Equal(t, true, isNum)
 		assert.Equal(t, expected, b)
@@ -390,7 +358,7 @@ func TestGetCellFormula(t *testing.T) {
 	// Test get cell formula on not exist worksheet.
 	f := NewFile()
 	_, err := f.GetCellFormula("SheetN", "A1")
-	assert.EqualError(t, err, "sheet SheetN does not exist")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
 
 	// Test get cell formula on no formula cell.
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", true))
@@ -534,13 +502,8 @@ func TestGetCellRichText(t *testing.T) {
 		},
 	}
 	assert.NoError(t, f.SetCellRichText("Sheet1", "A1", runsSource))
-	assert.NoError(t, f.SetCellValue("Sheet1", "A2", false))
 
-	runs, err := f.GetCellRichText("Sheet1", "A2")
-	assert.NoError(t, err)
-	assert.Equal(t, []RichTextRun(nil), runs)
-
-	runs, err = f.GetCellRichText("Sheet1", "A1")
+	runs, err := f.GetCellRichText("Sheet1", "A1")
 	assert.NoError(t, err)
 
 	assert.Equal(t, runsSource[0].Text, runs[0].Text)
@@ -572,7 +535,7 @@ func TestGetCellRichText(t *testing.T) {
 	assert.EqualError(t, err, "strconv.Atoi: parsing \"x\": invalid syntax")
 	// Test set cell rich text on not exists worksheet
 	_, err = f.GetCellRichText("SheetN", "A1")
-	assert.EqualError(t, err, "sheet SheetN does not exist")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
 	// Test set cell rich text with illegal cell coordinates
 	_, err = f.GetCellRichText("Sheet1", "A")
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
@@ -607,7 +570,7 @@ func TestSetCellRichText(t *testing.T) {
 			},
 		},
 		{
-			Text: "text with color and font-family, ",
+			Text: "text with color and font-family,",
 			Font: &Font{
 				Bold:   true,
 				Color:  "2354e8",
@@ -629,32 +592,17 @@ func TestSetCellRichText(t *testing.T) {
 			},
 		},
 		{
-			Text: " superscript",
-			Font: &Font{
-				Color:     "dbc21f",
-				VertAlign: "superscript",
-			},
-		},
-		{
 			Text: " and ",
 			Font: &Font{
-				Size:      14,
-				Color:     "ad23e8",
-				VertAlign: "BASELINE",
+				Size:  14,
+				Color: "ad23e8",
 			},
 		},
 		{
-			Text: "underline",
+			Text: "underline.",
 			Font: &Font{
 				Color:     "23e833",
 				Underline: "single",
-			},
-		},
-		{
-			Text: " subscript.",
-			Font: &Font{
-				Color:     "017505",
-				VertAlign: "subscript",
 			},
 		},
 	}
@@ -669,7 +617,7 @@ func TestSetCellRichText(t *testing.T) {
 	assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", style))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellRichText.xlsx")))
 	// Test set cell rich text on not exists worksheet
-	assert.EqualError(t, f.SetCellRichText("SheetN", "A1", richTextRun), "sheet SheetN does not exist")
+	assert.EqualError(t, f.SetCellRichText("SheetN", "A1", richTextRun), "sheet SheetN is not exist")
 	// Test set cell rich text with illegal cell coordinates
 	assert.EqualError(t, f.SetCellRichText("Sheet1", "A", richTextRun), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	richTextRun = []RichTextRun{{Text: strings.Repeat("s", TotalCellChars+1)}}
@@ -716,14 +664,6 @@ func TestFormattedValue2(t *testing.T) {
 	})
 	v = f.formattedValue(1, "43528", false)
 	assert.Equal(t, "43528", v)
-
-	// formatted decimal value with build-in number format ID
-	styleID, err := f.NewStyle(&Style{
-		NumFmt: 1,
-	})
-	assert.NoError(t, err)
-	v = f.formattedValue(styleID, "310.56", false)
-	assert.Equal(t, "311", v)
 }
 
 func TestSharedStringsError(t *testing.T) {

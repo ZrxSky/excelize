@@ -96,39 +96,13 @@ func TestRowsIterator(t *testing.T) {
 	assert.Equal(t, expectedNumRow, rowCount)
 }
 
-func TestRowsGetRowOpts(t *testing.T) {
-	sheetName := "Sheet2"
-	expectedRowStyleID1 := RowOpts{Height: 17.0, Hidden: false, StyleID: 1}
-	expectedRowStyleID2 := RowOpts{Height: 17.0, Hidden: false, StyleID: 0}
-	expectedRowStyleID3 := RowOpts{Height: 17.0, Hidden: false, StyleID: 2}
-	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	require.NoError(t, err)
-
-	rows, err := f.Rows(sheetName)
-	require.NoError(t, err)
-
-	assert.Equal(t, true, rows.Next())
-	_, err = rows.Columns()
-	require.NoError(t, err)
-	rowOpts := rows.GetRowOpts()
-	assert.Equal(t, expectedRowStyleID1, rowOpts)
-	assert.Equal(t, true, rows.Next())
-	rowOpts = rows.GetRowOpts()
-	assert.Equal(t, expectedRowStyleID2, rowOpts)
-	assert.Equal(t, true, rows.Next())
-	_, err = rows.Columns()
-	require.NoError(t, err)
-	rowOpts = rows.GetRowOpts()
-	assert.Equal(t, expectedRowStyleID3, rowOpts)
-}
-
 func TestRowsError(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 	_, err = f.Rows("SheetN")
-	assert.EqualError(t, err, "sheet SheetN does not exist")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
 	assert.NoError(t, f.Close())
 }
 
@@ -160,9 +134,9 @@ func TestRowHeight(t *testing.T) {
 	assert.Equal(t, defaultRowHeight, height)
 
 	// Test set and get row height on not exists worksheet.
-	assert.EqualError(t, f.SetRowHeight("SheetN", 1, 111.0), "sheet SheetN does not exist")
+	assert.EqualError(t, f.SetRowHeight("SheetN", 1, 111.0), "sheet SheetN is not exist")
 	_, err = f.GetRowHeight("SheetN", 3)
-	assert.EqualError(t, err, "sheet SheetN does not exist")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
 
 	// Test get row height with custom default row height.
 	assert.NoError(t, f.SetSheetFormatPr(sheet1,
@@ -246,13 +220,13 @@ func TestRowVisibility(t *testing.T) {
 	assert.Equal(t, false, visible)
 	assert.NoError(t, err)
 	assert.EqualError(t, f.SetRowVisible("Sheet3", 0, true), newInvalidRowNumberError(0).Error())
-	assert.EqualError(t, f.SetRowVisible("SheetN", 2, false), "sheet SheetN does not exist")
+	assert.EqualError(t, f.SetRowVisible("SheetN", 2, false), "sheet SheetN is not exist")
 
 	visible, err = f.GetRowVisible("Sheet3", 0)
 	assert.Equal(t, false, visible)
 	assert.EqualError(t, err, newInvalidRowNumberError(0).Error())
 	_, err = f.GetRowVisible("SheetN", 1)
-	assert.EqualError(t, err, "sheet SheetN does not exist")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestRowVisibility.xlsx")))
 }
@@ -315,10 +289,10 @@ func TestRemoveRow(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestRemoveRow.xlsx")))
 
 	// Test remove row on not exist worksheet
-	assert.EqualError(t, f.RemoveRow("SheetN", 1), `sheet SheetN does not exist`)
+	assert.EqualError(t, f.RemoveRow("SheetN", 1), `sheet SheetN is not exist`)
 }
 
-func TestInsertRows(t *testing.T) {
+func TestInsertRow(t *testing.T) {
 	f := NewFile()
 	sheet1 := f.GetSheetName(0)
 	r, err := f.workSheetReader(sheet1)
@@ -331,44 +305,36 @@ func TestInsertRows(t *testing.T) {
 
 	assert.NoError(t, f.SetCellHyperLink(sheet1, "A5", "https://github.com/xuri/excelize", "External"))
 
-	assert.NoError(t, f.InsertRows(sheet1, 1, 1))
+	assert.EqualError(t, f.InsertRow(sheet1, -1), newInvalidRowNumberError(-1).Error())
+
+	assert.EqualError(t, f.InsertRow(sheet1, 0), newInvalidRowNumberError(0).Error())
+
+	assert.NoError(t, f.InsertRow(sheet1, 1))
 	if !assert.Len(t, r.SheetData.Row, rowCount+1) {
 		t.FailNow()
 	}
 
-	assert.NoError(t, f.InsertRows(sheet1, 4, 1))
+	assert.NoError(t, f.InsertRow(sheet1, 4))
 	if !assert.Len(t, r.SheetData.Row, rowCount+2) {
 		t.FailNow()
 	}
 
-	assert.NoError(t, f.InsertRows(sheet1, 4, 2))
-	if !assert.Len(t, r.SheetData.Row, rowCount+4) {
-		t.FailNow()
-	}
-
-	assert.EqualError(t, f.InsertRows(sheet1, -1, 1), newInvalidRowNumberError(-1).Error())
-	assert.EqualError(t, f.InsertRows(sheet1, 0, 1), newInvalidRowNumberError(0).Error())
-	assert.EqualError(t, f.InsertRows(sheet1, 4, 0), ErrParameterInvalid.Error())
-	assert.EqualError(t, f.InsertRows(sheet1, 4, TotalRows), ErrMaxRows.Error())
-	assert.EqualError(t, f.InsertRows(sheet1, 4, TotalRows-5), ErrMaxRows.Error())
-	assert.EqualError(t, f.InsertRows(sheet1, TotalRows, 1), ErrMaxRows.Error())
-
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestInsertRows.xlsx")))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestInsertRow.xlsx")))
 }
 
-// Test internal structure state after insert operations. It is important
+// Testing internal structure state after insert operations. It is important
 // for insert workflow to be constant to avoid side effect with functions
 // related to internal structure.
-func TestInsertRowsInEmptyFile(t *testing.T) {
+func TestInsertRowInEmptyFile(t *testing.T) {
 	f := NewFile()
 	sheet1 := f.GetSheetName(0)
 	r, err := f.workSheetReader(sheet1)
 	assert.NoError(t, err)
-	assert.NoError(t, f.InsertRows(sheet1, 1, 1))
+	assert.NoError(t, f.InsertRow(sheet1, 1))
 	assert.Len(t, r.SheetData.Row, 0)
-	assert.NoError(t, f.InsertRows(sheet1, 2, 1))
+	assert.NoError(t, f.InsertRow(sheet1, 2))
 	assert.Len(t, r.SheetData.Row, 0)
-	assert.NoError(t, f.InsertRows(sheet1, 99, 1))
+	assert.NoError(t, f.InsertRow(sheet1, 99))
 	assert.Len(t, r.SheetData.Row, 0)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestInsertRowInEmptyFile.xlsx")))
 }
@@ -886,7 +852,7 @@ func TestDuplicateRowTo(t *testing.T) {
 	})
 	assert.EqualError(t, f.DuplicateRowTo(sheetName, 1, 2), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	// Test duplicate row on not exists worksheet
-	assert.EqualError(t, f.DuplicateRowTo("SheetN", 1, 2), "sheet SheetN does not exist")
+	assert.EqualError(t, f.DuplicateRowTo("SheetN", 1, 2), "sheet SheetN is not exist")
 }
 
 func TestDuplicateMergeCells(t *testing.T) {
@@ -896,7 +862,7 @@ func TestDuplicateMergeCells(t *testing.T) {
 	}}
 	assert.EqualError(t, f.duplicateMergeCells("Sheet1", ws, 0, 0), `cannot convert cell "-" to coordinates: invalid cell name "-"`)
 	ws.MergeCells.Cells[0].Ref = "A1:B1"
-	assert.EqualError(t, f.duplicateMergeCells("SheetN", ws, 1, 2), "sheet SheetN does not exist")
+	assert.EqualError(t, f.duplicateMergeCells("SheetN", ws, 1, 2), "sheet SheetN is not exist")
 }
 
 func TestGetValueFromInlineStr(t *testing.T) {
@@ -931,7 +897,7 @@ func TestGetValueFromNumber(t *testing.T) {
 
 func TestErrSheetNotExistError(t *testing.T) {
 	err := ErrSheetNotExist{SheetName: "Sheet1"}
-	assert.EqualValues(t, err.Error(), "sheet Sheet1 does not exist")
+	assert.EqualValues(t, err.Error(), "sheet Sheet1 is not exist")
 }
 
 func TestCheckRow(t *testing.T) {
@@ -949,27 +915,16 @@ func TestCheckRow(t *testing.T) {
 
 func TestSetRowStyle(t *testing.T) {
 	f := NewFile()
-	style1, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#63BE7B"],"pattern":1}}`)
+	styleID, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`)
 	assert.NoError(t, err)
-	style2, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`)
-	assert.NoError(t, err)
-	assert.NoError(t, f.SetCellStyle("Sheet1", "B2", "B2", style1))
-	assert.EqualError(t, f.SetRowStyle("Sheet1", 5, -1, style2), newInvalidRowNumberError(-1).Error())
-	assert.EqualError(t, f.SetRowStyle("Sheet1", 1, TotalRows+1, style2), ErrMaxRows.Error())
-	// Test set row style with invalid style ID.
+	assert.EqualError(t, f.SetRowStyle("Sheet1", 10, -1, styleID), newInvalidRowNumberError(-1).Error())
+	assert.EqualError(t, f.SetRowStyle("Sheet1", 1, TotalRows+1, styleID), ErrMaxRows.Error())
 	assert.EqualError(t, f.SetRowStyle("Sheet1", 1, 1, -1), newInvalidStyleID(-1).Error())
-	// Test set row style with not exists style ID.
-	assert.EqualError(t, f.SetRowStyle("Sheet1", 1, 1, 10), newInvalidStyleID(10).Error())
-	assert.EqualError(t, f.SetRowStyle("SheetN", 1, 1, style2), "sheet SheetN does not exist")
-	assert.NoError(t, f.SetRowStyle("Sheet1", 5, 1, style2))
+	assert.EqualError(t, f.SetRowStyle("SheetN", 1, 1, styleID), "sheet SheetN is not exist")
+	assert.NoError(t, f.SetRowStyle("Sheet1", 10, 1, styleID))
 	cellStyleID, err := f.GetCellStyle("Sheet1", "B2")
 	assert.NoError(t, err)
-	assert.Equal(t, style2, cellStyleID)
-	// Test cell inheritance rows style
-	assert.NoError(t, f.SetCellValue("Sheet1", "C1", nil))
-	cellStyleID, err = f.GetCellStyle("Sheet1", "C1")
-	assert.NoError(t, err)
-	assert.Equal(t, style2, cellStyleID)
+	assert.Equal(t, styleID, cellStyleID)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetRowStyle.xlsx")))
 }
 

@@ -18,12 +18,12 @@ func TestAddPivotTable(t *testing.T) {
 	types := []string{"Meat", "Dairy", "Beverages", "Produce"}
 	region := []string{"East", "West", "North", "South"}
 	assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]string{"Month", "Year", "Type", "Sales", "Region"}))
-	for row := 2; row < 32; row++ {
-		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("A%d", row), month[rand.Intn(12)]))
-		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("B%d", row), year[rand.Intn(3)]))
-		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("C%d", row), types[rand.Intn(4)]))
-		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("D%d", row), rand.Intn(5000)))
-		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("E%d", row), region[rand.Intn(4)]))
+	for i := 0; i < 30; i++ {
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("A%d", i+2), month[rand.Intn(12)]))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("B%d", i+2), year[rand.Intn(3)]))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("C%d", i+2), types[rand.Intn(4)]))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("D%d", i+2), rand.Intn(5000)))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("E%d", i+2), region[rand.Intn(4)]))
 	}
 	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
 		DataRange:       "Sheet1!$A$1:$E$31",
@@ -182,7 +182,7 @@ func TestAddPivotTable(t *testing.T) {
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
 		Data:            []PivotTableField{{Data: "Sales"}},
-	}), "sheet SheetN does not exist")
+	}), "sheet SheetN is not exist")
 	// Test the pivot table range of the worksheet that is not declared
 	assert.EqualError(t, f.AddPivotTable(&PivotTableOption{
 		DataRange:       "Sheet1!$A$1:$E$31",
@@ -198,7 +198,7 @@ func TestAddPivotTable(t *testing.T) {
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
 		Data:            []PivotTableField{{Data: "Sales"}},
-	}), "sheet SheetN does not exist")
+	}), "sheet SheetN is not exist")
 	// Test not exists worksheet in data range
 	assert.EqualError(t, f.AddPivotTable(&PivotTableOption{
 		DataRange:       "SheetN!$A$1:$E$31",
@@ -206,7 +206,7 @@ func TestAddPivotTable(t *testing.T) {
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
 		Data:            []PivotTableField{{Data: "Sales"}},
-	}), "sheet SheetN does not exist")
+	}), "sheet SheetN is not exist")
 	// Test invalid row number in data range
 	assert.EqualError(t, f.AddPivotTable(&PivotTableOption{
 		DataRange:       "Sheet1!$A$0:$E$31",
@@ -298,7 +298,7 @@ func TestGetPivotFieldsOrder(t *testing.T) {
 	f := NewFile()
 	// Test get pivot fields order with not exist worksheet
 	_, err := f.getPivotFieldsOrder(&PivotTableOption{DataRange: "SheetN!$A$1:$E$31"})
-	assert.EqualError(t, err, "sheet SheetN does not exist")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
 }
 
 func TestGetPivotTableFieldName(t *testing.T) {
